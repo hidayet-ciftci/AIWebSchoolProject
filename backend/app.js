@@ -22,7 +22,7 @@ const logger = require("./src/middlewares/logger");
 
 app.use(logger);
 app.use("/auth", authRouter);
-app.use("/api", apiRouter);
+app.use("/api/list", apiRouter);
 app.use(errorHandler);
 
 app.listen(process.env.PORT);

@@ -1,10 +1,15 @@
 const User = require("../models/User");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const Jwt = require("jsonwebtoken");
 
 const register = async (req, res, next) => {
   try {
     const newUser = req.body;
+    if (newUser.password.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 8 characters long." });
+    }
     const hashedPassword = await bcrypt.hash(newUser.password, 10);
     const user = await User.create({ ...newUser, password: hashedPassword });
     res.status(201).json({ message: "user created", user });
