@@ -1,21 +1,34 @@
 const User = require("../models/User");
+const bcrypt = require("bcrypt");
+const Jwt = require("jsonwebtoken");
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
-    // Kayıt işlemleri burada yapılır
-    const newUser = await User.create(req.body);
-    res.status(201).json({ status: "success", data: newUser });
+    const newUser = req.body;
+    const hashedPassword = await bcrypt.hash(newUser.password, 10);
+    const user = await User.create({ ...newUser, password: hashedPassword });
+    res.status(201).json({ message: "user created", user });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    next(err);
   }
 };
 const login = async (req, res) => {
   try {
-    // Kayıt işlemleri burada yapılır
-    const newUser = await User.create(req.body);
-    res.status(201).json({ status: "success", data: newUser });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "user not found" });
+    const isMatched = await bcrypt.compare(password, user.password);
+    if (!isMatched) return res.status(400).json({ message: "Wrong Password" });
+    const accessToken = Jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+    res.json({ message: "login success", accessToken });
+  } catch (error) {
+    next(error);
   }
 };
 module.exports = { register, login };
