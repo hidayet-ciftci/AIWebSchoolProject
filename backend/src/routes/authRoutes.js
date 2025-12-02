@@ -9,4 +9,12 @@ const upload = require("../middlewares/upload"); // Multer'ı çağır
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 
+router.get("/profile", verifyToken, async (req, res, next) => {
+  try {
+    res.json({ message: "profile accesed" });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
