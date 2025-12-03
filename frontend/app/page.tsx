@@ -10,7 +10,7 @@ export default function WelcomePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Gerçek bir uygulamada burada backend doğrulaması yapılır
+    // Demo yönlendirmesi
     if (userType === "student") {
       router.push("/student");
     } else {
@@ -19,12 +19,12 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-8 md:p-12 max-w-md w-full shadow-2xl transition-all duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-8 md:p-12 max-w-md w-full shadow-2xl transition-all duration-300 fade-in">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
-            🎓
+            <span className="text-4xl">🎓</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             AI Destekli OBS
@@ -37,30 +37,61 @@ export default function WelcomePage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Register Fields (Conditional) */}
             {!isLogin && (
-              <div className="grid grid-cols-2 gap-4 animate-fadeIn">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    Ad
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
-                    placeholder="Ad"
-                  />
+              <>
+                <div className="grid grid-cols-2 gap-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">
+                      Ad
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
+                      placeholder="Ad"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">
+                      Soyad
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
+                      placeholder="Soyad"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">
-                    Soyad
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
-                    placeholder="Soyad"
-                  />
+                <div className="grid grid-cols-2 gap-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">
+                      Yaş
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      min="15"
+                      max="100"
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
+                      placeholder="Yaş"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">
+                      Cinsiyet
+                    </label>
+                    <select
+                      required
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors bg-white"
+                    >
+                      <option value="">Seçiniz</option>
+                      <option value="male">Erkek</option>
+                      <option value="female">Kadın</option>
+                      <option value="other">Diğer</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Common Fields */}
@@ -122,7 +153,7 @@ export default function WelcomePage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full p-3.5 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
+              className="w-full p-3.5 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
             >
               {isLogin ? "Giriş Yap" : "Kayıt Ol"}
             </button>
@@ -135,7 +166,7 @@ export default function WelcomePage() {
             </span>
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="ml-2 text-[#667eea] font-semibold text-sm hover:underline"
+              className="ml-2 text-[#667eea] font-semibold text-sm hover:underline cursor-pointer"
             >
               {isLogin ? "Kayıt Ol" : "Giriş Yap"}
             </button>
