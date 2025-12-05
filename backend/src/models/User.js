@@ -5,6 +5,8 @@ const userSchema = new mongoose.Schema({
   Lname: { type: String, required: true },
   age: { type: Number, required: true },
   gender: { type: String, enum: ["male", "female"], required: true },
+  studentNo: { type: Number },
+  sicilNo: { type: String },
   email: {
     type: String,
     required: true,

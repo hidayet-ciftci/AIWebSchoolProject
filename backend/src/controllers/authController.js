@@ -10,8 +10,21 @@ const register = async (req, res, next) => {
         .status(400)
         .json({ message: "Password must be at least 8 characters long." });
     }
+    const length = await User.countDocuments();
+    const studentNumber = length + 2510205000;
+    const sicilNumber =
+      length < 10 ? "AKD-2025-00" + length : "AKD-2025-0" + length;
     const hashedPassword = await bcrypt.hash(newUser.password, 10);
-    const user = await User.create({ ...newUser, password: hashedPassword });
+    if (newUser.role === "student") {
+      newUser.studentNo = studentNumber;
+    }
+    if (newUser.role === "teacher") {
+      newUser.sicilNo = sicilNumber;
+    }
+    const user = await User.create({
+      ...newUser,
+      password: hashedPassword,
+    });
     res.status(201).json({ message: "user created", user });
   } catch (err) {
     next(err);

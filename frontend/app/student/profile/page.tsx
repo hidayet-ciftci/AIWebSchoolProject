@@ -16,13 +16,8 @@ export default function profilePage() {
             { label: "Cinsiyet", value: "Erkek" },
             { label: "Öğrenci No", value: "2023001" },
             { label: "E-posta", value: "ahmet@email.com" },
-            {
-              label: "Bölüm",
-              value: "Bilgisayar Mühendisliği",
-              full: true,
-            },
           ].map((item, i) => (
-            <div key={i} className={item.full ? "md:col-span-2" : ""}>
+            <div key={i}>
               <label className="block text-sm font-semibold text-gray-600 mb-2">
                 {item.label}
               </label>

@@ -16,13 +16,8 @@ export default function TeacherProfilePage() {
               label: "E-posta",
               value: "mehmet.demir@universite.edu.tr",
             },
-            {
-              label: "Bölüm",
-              value: "Bilgisayar Mühendisliği",
-              full: true,
-            },
           ].map((item, i) => (
-            <div key={i} className={item.full ? "md:col-span-2" : ""}>
+            <div key={i}>
               <label className="block text-sm font-semibold text-gray-600 mb-2">
                 {item.label}
               </label>
