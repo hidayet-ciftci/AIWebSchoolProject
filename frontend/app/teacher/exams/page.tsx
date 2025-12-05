@@ -2,7 +2,7 @@ export default function TeacherExamsPage() {
   return (
     <div className="animate-fadeIn">
       <h1 className="text-3xl font-bold text-[#1a202c] mb-6">Sınav Yönetimi</h1>
-      <button className="mb-6 px-6 py-3 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold hover:-translate-y-0.5 transition-transform">
+      <button className="mb-6 px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold hover:-translate-y-0.5 transition-transform">
         + Yeni Sınav Oluştur
       </button>
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">

@@ -19,11 +19,11 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl p-8 md:p-12 max-w-md w-full shadow-2xl transition-all duration-300 fade-in">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
+          <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
             <span className="text-4xl">🎓</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -153,7 +153,7 @@ export default function WelcomePage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full p-3.5 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
+              className="w-full p-3.5 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer"
             >
               {isLogin ? "Giriş Yap" : "Kayıt Ol"}
             </button>

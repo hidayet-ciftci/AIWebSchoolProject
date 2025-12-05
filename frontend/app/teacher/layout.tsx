@@ -24,7 +24,10 @@ export default function TeacherLayout({
     icon: string;
     label: string;
   }) => {
-    const isActive = pathname === href;
+    // Anasayfa için tam eşleşme, diğerleri için başlangıç kontrolü
+    const isActive =
+      href === "/teacher" ? pathname === href : pathname.startsWith(href);
+
     return (
       <Link
         href={href}
@@ -53,7 +56,7 @@ export default function TeacherLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative z-50 w-[280px] h-full bg-linear-to-b from-[#1a202c] to-[#2d3748] p-6 flex flex-col text-white transition-transform duration-300 ${
+        className={`fixed md:relative z-50 w-[280px] h-full bg-linear-to-br from-[#1a202c] to-[#2d3748] p-6 flex flex-col text-white transition-transform duration-300 ${
           isMobileMenuOpen
             ? "translate-x-0"
             : "-translate-x-full md:translate-x-0"
@@ -68,6 +71,8 @@ export default function TeacherLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
+          {/* Anasayfa eklendi */}
+          <NavLink href="/teacher" icon="🏠" label="Anasayfa" />
           <NavLink href="/teacher/profile" icon="👤" label="Profil" />
           <NavLink href="/teacher/courses" icon="📚" label="Dersler" />
           <NavLink href="/teacher/exams" icon="📝" label="Sınavlar" />

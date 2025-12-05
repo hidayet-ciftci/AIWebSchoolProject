@@ -10,12 +10,11 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname(); // Aktif linki belirlemek için
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => router.push("/");
 
-  // Navigasyon butonu bileşeni (Artık Link kullanıyor)
   const NavLink = ({
     href,
     icon,
@@ -25,7 +24,10 @@ export default function StudentLayout({
     icon: string;
     label: string;
   }) => {
-    const isActive = pathname === href;
+    // Anasayfa için tam eşleşme, diğerleri için 'starts with' kontrolü
+    const isActive =
+      href === "/student" ? pathname === href : pathname.startsWith(href);
+
     return (
       <Link
         href={href}
@@ -69,7 +71,8 @@ export default function StudentLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
-          {/* Linkler artık gerçek rotalara gidiyor */}
+          {/* Anasayfa Eklendi */}
+          <NavLink href="/student" icon="🏠" label="Anasayfa" />
           <NavLink href="/student/profile" icon="👤" label="Profil" />
           <NavLink href="/student/courses" icon="📚" label="Dersler" />
           <NavLink href="/student/exam" icon="📝" label="Sınavlar" />
@@ -98,7 +101,6 @@ export default function StudentLayout({
           </button>
         </div>
 
-        {/* Dynamic Content (Children) */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8">{children}</div>
       </main>
     </div>
