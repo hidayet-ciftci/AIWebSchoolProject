@@ -1,4 +1,4 @@
-export const profile = () => {
+export default function profilePage() {
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn">
       <h1 className="text-3xl font-bold text-[#1a202c] mb-6">
@@ -57,4 +57,4 @@ export const profile = () => {
       </div>
     </div>
   );
-};
+}

@@ -1,4 +1,4 @@
-export const grades = () => {
+export default function GradesPage() {
   return (
     <div className="animate-fadeIn">
       <h1 className="text-3xl font-bold text-[#1a202c] mb-6">Notlarım</h1>
@@ -42,4 +42,4 @@ export const grades = () => {
       </div>
     </div>
   );
-};
+}

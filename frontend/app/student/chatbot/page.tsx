@@ -1,9 +1,39 @@
-export const chatbot = ({
-  messages,
-  handleSendMessage,
-  inputText,
-  setInputText,
-}: any) => {
+"use client";
+
+import { useState } from "react";
+
+export default function ChatbotPage() {
+  // State'leri buraya taşıdık
+  const [messages, setMessages] = useState<
+    { role: "user" | "ai"; text: string }[]
+  >([
+    {
+      role: "ai",
+      text: "Merhaba! Ben AI öğrenme asistanınızım. Size dersleriniz, ödevleriniz veya sınavlarınız hakkında yardımcı olabilirim. Nasıl yardımcı olabilirim?",
+    },
+  ]);
+  const [inputText, setInputText] = useState("");
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputText.trim()) return;
+
+    setMessages((prev) => [...prev, { role: "user", text: inputText }]);
+    const tempInput = inputText;
+    setInputText("");
+
+    // Yapay zeka simülasyonu
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          text: `"${tempInput}" konulu sorunu anladım. Size yardımcı olmak için elimden geleni yapacağım.`,
+        },
+      ]);
+    }, 1000);
+  };
+
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn h-full flex flex-col">
       <h1 className="text-3xl font-bold text-[#1a202c] mb-6">AI Asistan</h1>
@@ -25,7 +55,7 @@ export const chatbot = ({
 
         {/* Messages */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-[#f7fafc]">
-          {messages.map((msg: any, idx: any) => (
+          {messages.map((msg, idx) => (
             <div
               key={idx}
               className={`flex gap-3 ${
@@ -72,4 +102,4 @@ export const chatbot = ({
       </div>
     </div>
   );
-};
+}

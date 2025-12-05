@@ -1,4 +1,4 @@
-export const courses = () => {
+export default function CoursesPage() {
   return (
     <div className="animate-fadeIn">
       <h1 className="text-3xl font-bold text-[#1a202c] mb-6">Derslerim</h1>
@@ -48,4 +48,4 @@ export const courses = () => {
       </div>
     </div>
   );
-};
+}
