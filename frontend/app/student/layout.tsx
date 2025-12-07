@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import toast, { Toaster } from "react-hot-toast"; // Toaster ekledik
 
 export default function StudentLayout({
   children,
@@ -12,8 +13,72 @@ export default function StudentLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Yetki kontrolü bitene kadar içeriği göstermemek için bir state
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [userName, setUserName] = useState("Öğrenci"); // Dinamik isim için
 
-  const handleLogout = () => router.push("/");
+  useEffect(() => {
+    const checkAuth = async () => {
+      // 1. Token var mı?
+      const token = localStorage.getItem("token");
+      const userStr = localStorage.getItem("user");
+
+      if (!token || !userStr) {
+        router.push("/");
+        return;
+      }
+
+      // 2. Rol kontrolü (Basit check)
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role !== "student") {
+          toast.error("Yetkisiz giriş denemesi!");
+          router.push("/"); // Veya ana sayfa
+          return;
+        }
+        setUserName(user.name); // İsim bilgisini state'e alalım
+      } catch (error) {
+        localStorage.clear();
+        router.push("/");
+        return;
+      }
+
+      // 3. TOKEN DOĞRULAMA (Backend ile haberleşme)
+      try {
+        const res = await fetch("http://localhost:5000/auth/dashboard", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`, // Token'ı header'da gönderiyoruz
+          },
+        });
+
+        // Eğer sunucu 200 dönmezse (örn: 401 token süresi doldu)
+        if (!res.ok) {
+          throw new Error("Oturum süresi doldu");
+        }
+
+        // Her şey yolunda, içeriği göster
+        setIsAuthorized(true);
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        toast.error("Oturum süreniz doldu, lütfen tekrar giriş yapın.");
+
+        // Token geçersizse temizle ve at
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    toast.success("Çıkış yapıldı");
+    router.push("/");
+  };
 
   const NavLink = ({
     href,
@@ -24,7 +89,6 @@ export default function StudentLayout({
     icon: string;
     label: string;
   }) => {
-    // Anasayfa için tam eşleşme, diğerleri için 'starts with' kontrolü
     const isActive =
       href === "/student" ? pathname === href : pathname.startsWith(href);
 
@@ -44,8 +108,20 @@ export default function StudentLayout({
     );
   };
 
+  // Eğer yetki kontrolü henüz bitmediyse loading gösterebilir veya boş dönebiliriz
+  if (!isAuthorized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f7fafc]">
+        <div className="text-[#667eea] font-semibold text-xl animate-pulse">
+          Yükleniyor...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[#f7fafc] overflow-hidden font-sans">
+      <Toaster /> {/* Bildirimler için */}
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div
@@ -53,7 +129,6 @@ export default function StudentLayout({
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
-
       {/* Sidebar */}
       <aside
         className={`fixed md:relative z-50 w-[280px] h-full bg-linear-to-b from-[#1a202c] to-[#2d3748] p-6 flex flex-col text-white transition-transform duration-300 ${
@@ -66,12 +141,12 @@ export default function StudentLayout({
           <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
             👨‍🎓
           </div>
-          <h2 className="font-semibold text-lg">Ahmet Yılmaz</h2>
+          {/* Dinamik İsim */}
+          <h2 className="font-semibold text-lg">{userName}</h2>
           <p className="text-gray-400 text-sm">Öğrenci</p>
         </div>
 
         <nav className="flex-1 space-y-2">
-          {/* Anasayfa Eklendi */}
           <NavLink href="/student" icon="🏠" label="Anasayfa" />
           <NavLink href="/student/profile" icon="👤" label="Profil" />
           <NavLink href="/student/courses" icon="📚" label="Dersler" />
@@ -87,7 +162,6 @@ export default function StudentLayout({
           🚪 Çıkış Yap
         </button>
       </aside>
-
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Mobile Header */}

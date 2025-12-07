@@ -13,31 +13,72 @@ export default function TeacherLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Yetki ve Kullanıcı İsmi State'leri
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // 1. Cepleri kontrol et (LocalStorage)
-    const token = localStorage.getItem("token");
-    const userStr = localStorage.getItem("user");
+    const checkAuth = async () => {
+      // 1. LocalStorage Kontrolü
+      const token = localStorage.getItem("token");
+      const userStr = localStorage.getItem("user");
 
-    // 2. Token yoksa veya kullanıcı bilgisi yoksa -> Dışarı!
-    if (!token || !userStr) {
-      router.push("/");
-      return;
-    }
+      if (!token || !userStr) {
+        router.push("/");
+        return;
+      }
 
-    // 3. Token var ama Rolü "teacher" değilse -> Dışarı!
-    const user = JSON.parse(userStr);
-    if (user.role !== "teacher") {
-      router.push("/student"); // Veya ana sayfaya router.push("/")
-      return;
-    }
+      // 2. Rol Kontrolü (Teacher mı?)
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role !== "teacher") {
+          toast.error("Bu alana giriş yetkiniz yok!");
+          router.back();
+          // Öğrenciyse kendi paneline gönder
+          return;
+        }
 
-    // 4. Her şey tamamsa içeri al
-    setIsAuthorized(true);
+        // İsmi state'e kaydet (Varsa 'Dr. Ad Soyad' formatı yapılabilir, şimdilik direkt ad)
+      } catch (error) {
+        localStorage.clear();
+        router.push("/");
+        return;
+      }
+
+      // 3. BACKEND TOKEN DOĞRULAMA
+      try {
+        const res = await fetch("http://localhost:5000/auth/dashboard", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Token geçersiz veya süresi dolmuş");
+        }
+
+        // Backend de onayladıysa içeri al
+        setIsAuthorized(true);
+      } catch (error) {
+        console.error("Auth failed:", error);
+        toast.error("Oturum süreniz doldu.");
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("user"); // Temizlik
+        router.push("/"); // Giriş ekranına şutla
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
-  const handleLogout = () => router.push("/");
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    toast.success("Çıkış yapıldı");
+    router.push("/");
+  };
 
   const NavLink = ({
     href,
@@ -48,7 +89,6 @@ export default function TeacherLayout({
     icon: string;
     label: string;
   }) => {
-    // Anasayfa için tam eşleşme, diğerleri için başlangıç kontrolü
     const isActive =
       href === "/teacher" ? pathname === href : pathname.startsWith(href);
 
@@ -68,8 +108,21 @@ export default function TeacherLayout({
     );
   };
 
+  // Yükleniyor ekranı
+  if (!isAuthorized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f7fafc]">
+        <div className="text-[#667eea] font-semibold text-xl animate-pulse">
+          Yükleniyor...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[#f7fafc] overflow-hidden font-sans">
+      <Toaster />
+
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div
@@ -90,12 +143,12 @@ export default function TeacherLayout({
           <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
             👨‍🏫
           </div>
-          <h2 className="font-semibold text-lg">Prof. Dr. Mehmet Demir</h2>
+          {/* Dinamik İsim Gösterimi */}
+          <h2 className="font-semibold text-lg">ahmet</h2>
           <p className="text-gray-400 text-sm">Öğretmen</p>
         </div>
 
         <nav className="flex-1 space-y-2">
-          {/* Anasayfa eklendi */}
           <NavLink href="/teacher" icon="🏠" label="Anasayfa" />
           <NavLink href="/teacher/profile" icon="👤" label="Profil" />
           <NavLink href="/teacher/courses" icon="📚" label="Dersler" />
@@ -106,7 +159,7 @@ export default function TeacherLayout({
 
         <button
           onClick={handleLogout}
-          className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-semibold mt-4 cursor-pointer"
+          className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-semibold mt-4 cursor-pointer flex items-center justify-center gap-2"
         >
           🚪 Çıkış Yap
         </button>

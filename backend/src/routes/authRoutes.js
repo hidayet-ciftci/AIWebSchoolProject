@@ -9,9 +9,9 @@ const upload = require("../middlewares/upload"); // Multer'ı çağır
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 
-router.get("/profile", verifyToken, async (req, res, next) => {
+router.get("/dashboard", verifyToken, async (req, res, next) => {
   try {
-    res.json({ message: "profile accesed" });
+    res.json({ message: "dashboard accesed" });
   } catch (error) {
     next(error);
   }

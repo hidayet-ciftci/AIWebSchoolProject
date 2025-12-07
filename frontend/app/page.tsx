@@ -223,36 +223,37 @@ export default function WelcomePage() {
             </div>
 
             {/* User Type Selection */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
-                Kullanıcı Tipi
-              </label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setUserType("student")}
-                  className={`flex-1 p-3 rounded-lg font-semibold border-2 transition-all ${
-                    userType === "student"
-                      ? "bg-[#667eea] text-white border-[#667eea]"
-                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                  }`}
-                >
-                  👨‍🎓 Öğrenci
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUserType("teacher")}
-                  className={`flex-1 p-3 rounded-lg font-semibold border-2 transition-all ${
-                    userType === "teacher"
-                      ? "bg-[#667eea] text-white border-[#667eea]"
-                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                  }`}
-                >
-                  👨‍🏫 Öğretmen
-                </button>
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">
+                  Kullanıcı Tipi
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setUserType("student")}
+                    className={`flex-1 p-3 rounded-lg font-semibold border-2 transition-all ${
+                      userType === "student"
+                        ? "bg-[#667eea] text-white border-[#667eea]"
+                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    👨‍🎓 Öğrenci
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserType("teacher")}
+                    className={`flex-1 p-3 rounded-lg font-semibold border-2 transition-all ${
+                      userType === "teacher"
+                        ? "bg-[#667eea] text-white border-[#667eea]"
+                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    👨‍🏫 Öğretmen
+                  </button>
+                </div>
               </div>
-            </div>
-
+            )}
             {/* Submit Button */}
             <button
               type="submit"
