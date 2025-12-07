@@ -2,6 +2,18 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const Jwt = require("jsonwebtoken");
 
+const generateUserIds = async (role) => {
+  const count = await User.countDocuments();
+  if (role === "student") {
+    return { studentNo: count + 2510205000 };
+  }
+  if (role === "teacher") {
+    const suffix = count < 10 ? `00${count}` : `0${count}`;
+    return { sicilNo: `AKD-2025-${suffix}` };
+  }
+  return {};
+};
+
 const register = async (req, res, next) => {
   try {
     const newUser = req.body;
@@ -10,20 +22,12 @@ const register = async (req, res, next) => {
         .status(400)
         .json({ message: "Password must be at least 8 characters long." });
     }
-    const length = await User.countDocuments();
-    const studentNumber = length + 2510205000;
-    const sicilNumber =
-      length < 10 ? "AKD-2025-00" + length : "AKD-2025-0" + length;
     const hashedPassword = await bcrypt.hash(newUser.password, 10);
-    if (newUser.role === "student") {
-      newUser.studentNo = studentNumber;
-    }
-    if (newUser.role === "teacher") {
-      newUser.sicilNo = sicilNumber;
-    }
+    const generateId = await generateUserIds(newUser.role);
     const user = await User.create({
       ...newUser,
       password: hashedPassword,
+      ...generateId,
     });
     res.status(201).json({ message: "user created", user });
   } catch (err) {
