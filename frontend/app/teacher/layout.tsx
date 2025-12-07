@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function TeacherLayout({
   children,
@@ -12,6 +13,29 @@ export default function TeacherLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    // 1. Cepleri kontrol et (LocalStorage)
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+
+    // 2. Token yoksa veya kullanıcı bilgisi yoksa -> Dışarı!
+    if (!token || !userStr) {
+      router.push("/");
+      return;
+    }
+
+    // 3. Token var ama Rolü "teacher" değilse -> Dışarı!
+    const user = JSON.parse(userStr);
+    if (user.role !== "teacher") {
+      router.push("/student"); // Veya ana sayfaya router.push("/")
+      return;
+    }
+
+    // 4. Her şey tamamsa içeri al
+    setIsAuthorized(true);
+  }, [router]);
 
   const handleLogout = () => router.push("/");
 

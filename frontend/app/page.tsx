@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import { error } from "console";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -90,13 +89,14 @@ export default function WelcomePage() {
           );
         }
         if (!response.ok) throw new Error(data.message);
-        toast.success(data.message, { id: "SuccessLoginID" });
         localStorage.setItem("token", data.accessToken);
-        if (userType === "student") {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        if (data.user.role === "student") {
           router.push("/student");
-        } else {
+        } else if (data.user.role === "teacher") {
           router.push("/teacher");
         }
+        toast.success(data.message, { id: "SuccessLoginID" });
       } catch (error: any) {
         toast.error(error.message, { id: "loginErrorID" });
       }
