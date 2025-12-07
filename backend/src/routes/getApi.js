@@ -14,7 +14,6 @@ router.get("/user", async (req, res, next) => {
 
 router.get("/teacher", async (req, res, next) => {
   try {
-    // Tüm kullanıcıları bul ama şifrelerini getirme
     const users = await User.find({ role: "teacher" }).select("-password");
     res.json(users);
   } catch (error) {
@@ -24,7 +23,6 @@ router.get("/teacher", async (req, res, next) => {
 
 router.get("/student", async (req, res, next) => {
   try {
-    // Tüm kullanıcıları bul ama şifrelerini getirme
     const users = await User.find({ role: "student" }).select("-password");
     res.json(users);
   } catch (error) {

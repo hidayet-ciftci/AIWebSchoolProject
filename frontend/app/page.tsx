@@ -2,20 +2,62 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
+import { error } from "console";
 
 export default function WelcomePage() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<"student" | "teacher">("student");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 1. ADIM: User state'ini tüm alanları içerecek şekilde bir obje olarak başlatıyoruz
+  const [user, setUser] = useState({
+    name: "",
+    surname: "",
+    age: "",
+    gender: "",
+    email: "",
+    password: "",
+  });
+
+  // 2. ADIM: Herhangi bir input değiştiğinde çalışacak genel fonksiyon
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setUser((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const finalData = { ...user, role: userType };
+    /* console.log("Gönderilecek Veri:", finalData); */
+    try {
+      const response = await fetch("http://localhost:5000/auth/register", {
+        method: "POST",
+        body: JSON.stringify(finalData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const res = await response.json();
+      console.log("data:", res.message);
+      if (response.ok) {
+        setIsLogin(true);
+        toast.success("Succesfully Registered", { id: "succesID" });
+      } else throw new Error();
+    } catch (error) {
+      toast.error(`Registered Failed ,${error}`, { id: "toastId" });
+    }
     // Demo yönlendirmesi
-    if (userType === "student") {
+    /* if (userType === "student") {
       router.push("/student");
     } else {
       router.push("/teacher");
-    }
+    } */
   };
 
   return (
@@ -46,6 +88,9 @@ export default function WelcomePage() {
                     <input
                       required
                       type="text"
+                      name="name" // State'deki isimle aynı olmalı
+                      value={user.name} // State'e bağlandı
+                      onChange={handleChange} // Fonksiyona bağlandı
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
                       placeholder="Ad"
                     />
@@ -57,6 +102,9 @@ export default function WelcomePage() {
                     <input
                       required
                       type="text"
+                      name="surname"
+                      value={user.surname}
+                      onChange={handleChange}
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
                       placeholder="Soyad"
                     />
@@ -70,6 +118,9 @@ export default function WelcomePage() {
                     <input
                       required
                       type="number"
+                      name="age"
+                      value={user.age}
+                      onChange={handleChange}
                       min="15"
                       max="100"
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
@@ -82,12 +133,14 @@ export default function WelcomePage() {
                     </label>
                     <select
                       required
+                      name="gender"
+                      value={user.gender}
+                      onChange={handleChange}
                       className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors bg-white"
                     >
                       <option value="">Seçiniz</option>
                       <option value="male">Erkek</option>
                       <option value="female">Kadın</option>
-                      <option value="other">Diğer</option>
                     </select>
                   </div>
                 </div>
@@ -102,6 +155,9 @@ export default function WelcomePage() {
               <input
                 required
                 type="email"
+                name="email"
+                value={user.email}
+                onChange={handleChange}
                 className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
                 placeholder="ornek@email.com"
               />
@@ -114,8 +170,12 @@ export default function WelcomePage() {
               <input
                 required
                 type="password"
+                name="password"
+                value={user.password}
+                onChange={handleChange}
                 className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-[#667eea] outline-none transition-colors"
                 placeholder="••••••••"
+                minLength={8}
               />
             </div>
 
@@ -171,6 +231,7 @@ export default function WelcomePage() {
               {isLogin ? "Kayıt Ol" : "Giriş Yap"}
             </button>
           </div>
+          <Toaster />
         </div>
       </div>
     </div>
