@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 export default function TeacherLayout({
   children,
@@ -33,12 +33,11 @@ export default function TeacherLayout({
         const user = JSON.parse(userStr);
         if (user.role !== "teacher") {
           toast.error("Bu alana giriş yetkiniz yok!");
-          router.back();
-          // Öğrenciyse kendi paneline gönder
+          setTimeout(() => {
+            router.back();
+          }, 1000);
           return;
         }
-
-        // İsmi state'e kaydet (Varsa 'Dr. Ad Soyad' formatı yapılabilir, şimdilik direkt ad)
       } catch (error) {
         localStorage.clear();
         router.push("/");
@@ -121,8 +120,6 @@ export default function TeacherLayout({
 
   return (
     <div className="flex h-screen bg-[#f7fafc] overflow-hidden font-sans">
-      <Toaster />
-
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div

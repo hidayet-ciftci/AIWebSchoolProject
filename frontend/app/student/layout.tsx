@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import toast, { Toaster } from "react-hot-toast"; // Toaster ekledik
+import toast from "react-hot-toast";
 
 export default function StudentLayout({
   children,
@@ -15,7 +15,6 @@ export default function StudentLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Yetki kontrolü bitene kadar içeriği göstermemek için bir state
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [userName, setUserName] = useState("Öğrenci"); // Dinamik isim için
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -33,12 +32,14 @@ export default function StudentLayout({
         const user = JSON.parse(userStr);
         if (user.role !== "student") {
           toast.error("Yetkisiz giriş denemesi!");
-          router.push("/"); // Veya ana sayfa
+          setTimeout(() => {
+            router.back();
+          }, 1000);
           return;
         }
-        setUserName(user.name); // İsim bilgisini state'e alalım
       } catch (error) {
-        localStorage.clear();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
         router.push("/");
         return;
       }
@@ -121,7 +122,6 @@ export default function StudentLayout({
 
   return (
     <div className="flex h-screen bg-[#f7fafc] overflow-hidden font-sans">
-      <Toaster /> {/* Bildirimler için */}
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div
@@ -141,8 +141,7 @@ export default function StudentLayout({
           <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
             👨‍🎓
           </div>
-          {/* Dinamik İsim */}
-          <h2 className="font-semibold text-lg">{userName}</h2>
+          <h2 className="font-semibold text-lg">ahmet</h2>
           <p className="text-gray-400 text-sm">Öğrenci</p>
         </div>
 

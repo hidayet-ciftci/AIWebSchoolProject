@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -275,7 +275,6 @@ export default function WelcomePage() {
               {isLogin ? "Kayıt Ol" : "Giriş Yap"}
             </button>
           </div>
-          <Toaster />
         </div>
       </div>
     </div>
