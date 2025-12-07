@@ -34,30 +34,73 @@ export default function WelcomePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalData = { ...user, role: userType };
-    /* console.log("Gönderilecek Veri:", finalData); */
-    try {
-      const response = await fetch("http://localhost:5000/auth/register", {
-        method: "POST",
-        body: JSON.stringify(finalData),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const res = await response.json();
-      console.log("data:", res.message);
-      if (response.ok) {
-        setIsLogin(true);
-        toast.success("Succesfully Registered", { id: "succesID" });
-      } else throw new Error();
-    } catch (error) {
-      toast.error(`Registered Failed ,${error}`, { id: "toastId" });
-    }
-    // Demo yönlendirmesi
-    /* if (userType === "student") {
-      router.push("/student");
+    const endpoint = isLogin ? "login" : "register";
+    console.log(endpoint);
+    if (endpoint === "register") {
+      try {
+        const response = await fetch("http://localhost:5000/auth/register", {
+          method: "POST",
+          body: JSON.stringify(finalData),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        // 2. İçerik Tipini Kontrol Et (HTML mi JSON mı?)
+        const contentType = response.headers.get("content-type");
+
+        // Eğer yanıt JSON değilse (örn: HTML sayfası dönüyorsa), API adresi yanlıştır veya sunucu çökmüştür.
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error(
+            "Sunucuya bağlanılamadı veya geçersiz bir yanıt alındı."
+          );
+        }
+        const data = await response.json();
+        console.log("data:", data);
+        if (!response.ok) {
+          throw new Error(data.message || "an error occured");
+        }
+        console.log("Başarılı:", data.message);
+        if (!isLogin) {
+          setIsLogin(true);
+          toast.success("Succesfully Registered", { id: "succesID" });
+        }
+      } catch (error: any) {
+        let errorMessage = error.message;
+        // Eğer sunucu tamamen kapalıysa fetch "Failed to fetch" hatası verir.
+        if (errorMessage === "Failed to fetch") {
+          errorMessage =
+            "Sunucuya bağlanılamadı. Lütfen internetinizi veya sunucuyu kontrol edin.";
+        }
+        toast.error(errorMessage, { id: "toastId" });
+      }
     } else {
-      router.push("/teacher");
-    } */
+      try {
+        const response = await fetch("http://localhost:5000/auth/login", {
+          method: "POST",
+          body: JSON.stringify(finalData),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error(
+            "Sunucuya bağlanılamadı veya geçersiz bir yanıt alındı."
+          );
+        }
+        if (!response.ok) throw new Error(data.message);
+        toast.success(data.message, { id: "SuccessLoginID" });
+        localStorage.setItem("token", data.accessToken);
+        if (userType === "student") {
+          router.push("/student");
+        } else {
+          router.push("/teacher");
+        }
+      } catch (error: any) {
+        toast.error(error.message, { id: "loginErrorID" });
+      }
+    }
   };
 
   return (
