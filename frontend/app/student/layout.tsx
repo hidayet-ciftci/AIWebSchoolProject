@@ -72,7 +72,7 @@ export default function StudentLayout({
     };
 
     checkAuth();
-  }, [router]);
+  }, [router, pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -80,6 +80,8 @@ export default function StudentLayout({
     toast.success("Çıkış yapıldı");
     router.push("/");
   };
+
+  //NavLink , navbar'ın hangi sayfada olduğunu belirtmek için kullanılıyor
 
   const NavLink = ({
     href,

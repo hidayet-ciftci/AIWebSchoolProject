@@ -28,7 +28,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* 2. Toaster'ı en tepeye koyuyoruz. Sayfa değişse de bu kalıcıdır. */}
         <Toaster position="top-center" reverseOrder={false} />
         {children}
       </body>

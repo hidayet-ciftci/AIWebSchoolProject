@@ -70,7 +70,7 @@ export default function TeacherLayout({
     };
 
     checkAuth();
-  }, [router]);
+  }, [router, pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
