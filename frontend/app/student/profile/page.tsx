@@ -1,4 +1,6 @@
 export default function profilePage() {
+  const response = fetch("http://localhost:5000/api/list/user/:id");
+
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn">
       <h1 className="text-3xl font-bold text-[#1a202c] mb-6">

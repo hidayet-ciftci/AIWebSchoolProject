@@ -12,6 +12,16 @@ router.get("/user", async (req, res, next) => {
   }
 });
 
+router.get("/user/:id", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const users = await User.findById(id).select("-password");
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/teacher", async (req, res, next) => {
   try {
     const users = await User.find({ role: "teacher" }).select("-password");
