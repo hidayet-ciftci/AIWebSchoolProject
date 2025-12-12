@@ -1,5 +1,5 @@
 "use client";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -37,7 +37,7 @@ export default function WelcomePage() {
     console.log(endpoint);
     if (endpoint === "register") {
       try {
-        const response = await fetch("http://localhost:5000/auth/register", {
+        const response = await fetch(`${API_URL}/auth/register`, {
           method: "POST",
           body: JSON.stringify(finalData),
           headers: {
@@ -74,7 +74,7 @@ export default function WelcomePage() {
       }
     } else {
       try {
-        const response = await fetch("http://localhost:5000/auth/login", {
+        const response = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           body: JSON.stringify(finalData),
           headers: {
