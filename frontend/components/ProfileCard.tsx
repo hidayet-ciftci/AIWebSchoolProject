@@ -1,20 +1,13 @@
 "use client";
 
-// TypeScript kullandığın için gelen verinin tipini tanımlıyoruz
-interface UserProfile {
-  name: string;
-  surname: string;
-  age: number;
-  gender: string;
-  email: string;
-  role: string;
-  studentNo?: number; // Sadece öğrencide var, o yüzden opsiyonel (?)
-  sicilNo?: string; // Sadece öğretmende var
-}
+import { UserProfile } from "@/types"; // Tipi buradan import ettik
 
 export default function ProfileCard({ data }: { data: UserProfile }) {
   return (
     <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 mb-6">
+      <h2 className="text-xl font-bold text-[#1a202c] mb-6">
+        Kişisel Bilgiler
+      </h2>
       <div className="grid md:grid-cols-2 gap-6">
         {/* Ortak Alanlar */}
         <InfoItem label="Ad" value={data.name} />
@@ -40,7 +33,7 @@ export default function ProfileCard({ data }: { data: UserProfile }) {
   );
 }
 
-// Küçük bir yardımcı bileşen (Kod tekrarını iyice azaltmak için)
+// Yardımcı bileşen aynı kalabilir
 function InfoItem({
   label,
   value,

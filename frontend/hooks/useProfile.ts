@@ -1,20 +1,13 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-
-interface UserProfile {
-  name: string;
-  surname: string;
-  age: number;
-  gender: string;
-  email: string;
-  role: string;
-  studentNo?: number;
-  sicilNo?: string;
-}
+import { UserProfile } from "@/types"; // 1. Tipi buradan çektik
 
 export function useProfile() {
-  const [profile, setProfile] = useState<UserProfile>();
+  const [profile, setProfile] = useState<UserProfile | null>(null); // Tip güvenliği sağlandı
   const [loading, setLoading] = useState(true);
+
+  // 2. API URL'ini env dosyasından alıyoruz
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -25,16 +18,14 @@ export function useProfile() {
       }
 
       try {
-        const response = await fetch(
-          "http://localhost:5000/api/users/profile",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        // Hardcoded URL yerine değişken kullanımı:
+        const response = await fetch(`${API_URL}/api/users/profile`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         if (!response.ok) throw new Error("Profil alınamadı");
 
@@ -49,7 +40,7 @@ export function useProfile() {
     };
 
     fetchProfile();
-  }, []);
+  }, [API_URL]); // API_URL değişirse (teorik olarak) tekrar çalışsın
 
   return { profile, loading };
 }

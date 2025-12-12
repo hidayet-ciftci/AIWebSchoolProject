@@ -13,7 +13,7 @@ export default function TeacherLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   // Yetki ve Kullanıcı İsmi State'leri
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -46,7 +46,7 @@ export default function TeacherLayout({
 
       // 3. BACKEND TOKEN DOĞRULAMA
       try {
-        const res = await fetch("http://localhost:5000/auth/dashboard", {
+        const res = await fetch(`${API_URL}/auth/dashboard`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

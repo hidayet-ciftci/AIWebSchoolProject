@@ -15,7 +15,7 @@ export default function StudentLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Yetki kontrolü bitene kadar içeriği göstermemek için bir state
   const [isAuthorized, setIsAuthorized] = useState(false);
-
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   useEffect(() => {
     const checkAuth = async () => {
       // 1. Token var mı?
@@ -46,7 +46,7 @@ export default function StudentLayout({
 
       // 3. TOKEN DOĞRULAMA (Backend ile haberleşme)
       try {
-        const res = await fetch("http://localhost:5000/auth/dashboard", {
+        const res = await fetch(`${API_URL}/auth/dashboard`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`, // Token'ı header'da gönderiyoruz
