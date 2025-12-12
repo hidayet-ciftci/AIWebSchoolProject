@@ -1,6 +1,45 @@
-export default function profilePage() {
-  const response = fetch("http://localhost:5000/api/list/user/:id");
+"use client";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
+export default function profilePage() {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/list/user/profile",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!response.ok) throw new Error("response not ok");
+        const data = await response.json();
+        setProfile(data);
+      } catch (error) {
+        console.log(error);
+        toast.error("hata");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  if (loading) {
+    return <div className="p-8 text-center">Yükleniyor...</div>;
+  }
+  if (!profile) {
+    return <div className="p-8 text-center">Profil bulunamadı.</div>;
+  }
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn">
       <h1 className="text-3xl font-bold text-[#1a202c] mb-6">
@@ -11,45 +50,68 @@ export default function profilePage() {
           Kişisel Bilgiler
         </h2>
         <div className="grid md:grid-cols-2 gap-6">
-          {[
-            { label: "Ad", value: "Ahmet" },
-            { label: "Soyad", value: "Yılmaz" },
-            { label: "Yaş", value: "21" },
-            { label: "Cinsiyet", value: "Erkek" },
-            { label: "Öğrenci No", value: "2023001" },
-            { label: "E-posta", value: "ahmet@email.com" },
-          ].map((item, i) => (
-            <div key={i}>
+          {/* Gelen profile verisini burada ekrana basıyoruz */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
+              Ad
+            </label>
+            <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
+              {profile?.name}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
+              Soyad
+            </label>
+            <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
+              {profile.surname}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
+              Yaş
+            </label>
+            <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
+              {profile.age}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
+              Cinsiyet
+            </label>
+            <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
+              {profile.gender}
+            </p>
+          </div>
+          {/* Öğrenciyse numarasını, öğretmense sicilini göster (Backend Modelinize göre) */}
+          {profile.role === "student" && (
+            <div>
               <label className="block text-sm font-semibold text-gray-600 mb-2">
-                {item.label}
+                Öğrenci No
               </label>
               <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
-                {item.value}
+                {profile.studentNo}
               </p>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Şifre Değiştirme (Basitleştirilmiş) */}
-      <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-[#1a202c] mb-6">
-          Şifre Değiştir
-        </h2>
-        <div className="space-y-4">
-          <input
-            type="password"
-            placeholder="Mevcut Şifre"
-            className="w-full p-3 border border-gray-200 rounded-lg"
-          />
-          <input
-            type="password"
-            placeholder="Yeni Şifre"
-            className="w-full p-3 border border-gray-200 rounded-lg"
-          />
-          <button className="px-8 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold">
-            Güncelle
-          </button>
+          )}
+          {profile.role === "teacher" && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-2">
+                Sicil No
+              </label>
+              <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
+                {profile.sicilNo}
+              </p>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">
+              E-posta
+            </label>
+            <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
+              {profile.email}
+            </p>
+          </div>
         </div>
       </div>
     </div>
