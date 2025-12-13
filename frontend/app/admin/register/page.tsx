@@ -3,14 +3,16 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 
+import { UserProfile } from "@/types";
+
 export default function CreateUserPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Form verileri - Login sayfasından alınan tüm alanlar burada
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UserProfile>({
     name: "",
     surname: "",
-    age: "",
+    age: null,
     gender: "",
     email: "",
     password: "",
@@ -49,11 +51,7 @@ export default function CreateUserPage() {
 
       toast.success(
         `Yeni ${
-          formData.role === "teacher"
-            ? "Öğretmen"
-            : formData.role === "admin"
-            ? "Admin"
-            : "Öğrenci"
+          formData.role === "teacher" ? "Öğretmen" : "Öğrenci"
         } başarıyla oluşturuldu!`
       );
 
@@ -61,7 +59,7 @@ export default function CreateUserPage() {
       setFormData({
         name: "",
         surname: "",
-        age: "",
+        age: null,
         gender: "",
         email: "",
         password: "",
@@ -127,7 +125,7 @@ export default function CreateUserPage() {
                 required
                 type="number"
                 name="age"
-                value={formData.age}
+                value={formData.age === null ? "" : formData.age}
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg outline-none focus:border-[#667eea] transition-colors"
               />
@@ -177,17 +175,6 @@ export default function CreateUserPage() {
                   className="w-4 h-4 text-[#667eea]"
                 />
                 <span className="text-gray-700">Öğretmen</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="role"
-                  value="admin"
-                  checked={formData.role === "admin"}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-[#667eea]"
-                />
-                <span className="text-red-600 font-semibold">Admin</span>
               </label>
             </div>
           </div>
