@@ -43,16 +43,18 @@ export default function AdminLayout({
         if (!res.ok) throw new Error("Token geçersiz");
         setIsAuthorized(true);
       } catch (error) {
-        localStorage.clear();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
         router.push("/");
       }
     };
 
     checkAuth();
-  }, [router, API_URL]);
+  }, [router, pathname]);
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     toast.success("Çıkış yapıldı");
     router.push("/");
   };

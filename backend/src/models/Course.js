@@ -15,9 +15,6 @@ const courseSchema = new mongoose.Schema({
     },
   ],
   lessonNumber: { type: Number, required: true },
-  // Not: Artık öğrenci sayısını bu dizinin uzunluğundan alabileceğiniz için,
-  // 'studentNumber' alanı modelde gereksiz hale gelebilir.
-  studentNumber: { type: Number },
   source: { type: String, default: "" },
   status: { type: String },
 });
