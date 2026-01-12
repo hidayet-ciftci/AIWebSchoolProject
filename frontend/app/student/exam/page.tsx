@@ -48,14 +48,13 @@ export default function ExamPage() {
 
   // Yardımcı Fonksiyon: Tarih Formatlama
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = {
+    return new Date(dateString).toLocaleString("tr-TR", {
       day: "numeric",
       month: "long",
       year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString("tr-TR", options);
+      hour: "2-digit", // Saati ekledik
+      minute: "2-digit", // Dakikayı ekledik
+    });
   };
 
   // Yardımcı Fonksiyon: Sınav Durumu Hesaplama

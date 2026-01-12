@@ -4,17 +4,24 @@ const Exam = require("../models/Exam");
 const Course = require("../models/Course");
 
 // 1. Yeni Sınav Oluştur (Sadece iskelet)
+// 1. Yeni Sınav Oluştur
 const createExam = async (req, res) => {
   try {
-    const { courseId, examType, date, duration, weight, teacherId } = req.body;
+    // time parametresini de req.body'den alıyoruz
+    const { courseId, examType, date, time, duration, weight, teacherId } =
+      req.body;
 
-    // Dersi bul (Başlık için)
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: "Seçilen ders bulunamadı." });
     }
 
-    // Başlık Oluştur: Matematik Vize Sınavı
+    // --- KRİTİK GÜNCELLEME BURASI ---
+    // Tarih ve Saati birleştirip tam bir zaman damgası oluşturuyoruz.
+    // Gelen date: "2025-02-20", time: "14:30" -> Date Objesi
+    const fullDate = new Date(`${date}T${time}:00`);
+    // -------------------------------
+
     const formattedType = examType.charAt(0).toUpperCase() + examType.slice(1);
     const generatedTitle = `${course.name} ${formattedType} Sınavı`;
 
@@ -23,10 +30,10 @@ const createExam = async (req, res) => {
       course: courseId,
       teacher: teacherId,
       examType,
-      date,
+      date: fullDate, // Artık saati de içeren tam tarih
       duration,
       weight,
-      questions: [], // Başlangıçta soru yok
+      questions: [],
     });
 
     await newExam.save();

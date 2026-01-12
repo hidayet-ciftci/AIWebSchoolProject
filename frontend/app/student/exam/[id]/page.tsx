@@ -111,7 +111,7 @@ export default function TakeExamPage() {
   };
 
   // Sınavı Bitir Butonu
-  const handleFinishExam = (isAuto: boolean = false) => {
+  const handleFinishExam = async (isAuto: boolean = false) => {
     if (isAuto) {
       alert("Süre doldu! Sınavınız otomatik olarak sonlandırılıyor.");
     } else {
@@ -121,9 +121,17 @@ export default function TakeExamPage() {
       if (!confirmFinish) return;
     }
 
+    // TODO: Burada Backend'e cevapları POST etme kodu olacak.
+    // Şimdilik sadece console'a yazıp yönlendiriyoruz.
     console.log("Gönderilecek Cevaplar:", answers);
-    // BURADA BACKEND'E POST İŞLEMİ YAPILACAK (Sonraki Aşama)
-    alert("Sınav tamamlandı! (Sonuç kaydetme sonraki aşamada)");
+
+    /* İleride eklenecek kod:
+       await fetch('/api/exams/submit', { 
+         method: 'POST', 
+         body: JSON.stringify({ examId: exam._id, answers }) 
+       });
+    */
+
     router.push("/student/exam");
   };
 
