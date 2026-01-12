@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 
-// Tip tanımlamaları (backend'den gelen veriye göre)
+// --- TİP TANIMLAMALARI ---
 interface Question {
   _id: string;
   questionText: string;
@@ -20,19 +20,30 @@ interface ExamData {
   remainingTime: number; // Backend'den ms cinsinden gelecek
 }
 
+// Yeni: Sonuç verisi tipi
+interface ExamResultData {
+  score: number;
+  correctCount: number;
+  wrongCount: number;
+  totalQuestions: number;
+}
+
 export default function TakeExamPage() {
-  const params = useParams(); // URL'deki ID'yi alır
+  const params = useParams();
   const router = useRouter();
 
   const [exam, setExam] = useState<ExamData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Geri sayım için state
-  const [timeLeft, setTimeLeft] = useState<number>(0); // saniye cinsinden tutalım
+  // Sonuç State'i (Sınav bitince dolar)
+  const [examResult, setExamResult] = useState<ExamResultData | null>(null);
+
+  // Geri sayım
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Öğrencinin verdiği cevapları tutacak obje { soruId: "Cevap" }
+  // Cevaplar
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -58,8 +69,6 @@ export default function TakeExamPage() {
 
         const data = await res.json();
         setExam(data);
-
-        // Backend'den gelen kalan süreyi (ms) saniyeye çevir
         setTimeLeft(Math.floor(data.remainingTime / 1000));
       } catch (err: any) {
         setError(err.message);
@@ -77,6 +86,9 @@ export default function TakeExamPage() {
 
   // Sayaç Mantığı
   useEffect(() => {
+    // Sonuç varsa sayacı durdur
+    if (examResult) return;
+
     if (timeLeft > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
@@ -93,16 +105,14 @@ export default function TakeExamPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [timeLeft]);
+  }, [timeLeft, examResult]);
 
-  // Saniyeyi Dakika:Saniye formatına çevir
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  // Cevap işaretleme fonksiyonu
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({
       ...prev,
@@ -110,29 +120,51 @@ export default function TakeExamPage() {
     }));
   };
 
-  // Sınavı Bitir Butonu
+  // --- SINAVI BİTİRME VE PUANLAMA ---
   const handleFinishExam = async (isAuto: boolean = false) => {
-    if (isAuto) {
-      alert("Süre doldu! Sınavınız otomatik olarak sonlandırılıyor.");
-    } else {
+    if (!isAuto) {
       const confirmFinish = confirm(
         "Sınavı bitirmek istediğinize emin misiniz?"
       );
       if (!confirmFinish) return;
     }
 
-    // TODO: Burada Backend'e cevapları POST etme kodu olacak.
-    // Şimdilik sadece console'a yazıp yönlendiriyoruz.
-    console.log("Gönderilecek Cevaplar:", answers);
+    // Sayacı durdur
+    if (timerRef.current) clearInterval(timerRef.current);
 
-    /* İleride eklenecek kod:
-       await fetch('/api/exams/submit', { 
-         method: 'POST', 
-         body: JSON.stringify({ examId: exam._id, answers }) 
-       });
-    */
+    const token = localStorage.getItem("token");
 
-    router.push("/student/exam");
+    try {
+      // YENİ ENDPOINT: grades/create
+      const res = await fetch(`http://localhost:5000/api/grades/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          examId: exam?._id,
+          answers: answers,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Backend'den gelen sonucu ekrana basmak için state'e at
+        setExamResult({
+          score: data.score,
+          correctCount: data.correctCount,
+          wrongCount: data.wrongCount,
+          totalQuestions: data.totalQuestions,
+        });
+      } else {
+        alert("Hata: " + data.message);
+      }
+    } catch (error) {
+      console.error("Fetch Hatası:", error);
+      alert("Sunucuyla bağlantı kurulamadı.");
+    }
   };
 
   if (loading)
@@ -140,7 +172,7 @@ export default function TakeExamPage() {
   if (error)
     return (
       <div className="p-10 text-center text-red-500 font-bold">
-        {error} <br />{" "}
+        {error} <br />
         <button
           onClick={() => router.back()}
           className="mt-4 text-blue-500 underline"
@@ -150,6 +182,60 @@ export default function TakeExamPage() {
       </div>
     );
 
+  // --- SONUÇ EKRANI (Varsa bunu göster) ---
+  if (examResult) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-xl text-center animate-fadeIn">
+        <div className="mb-6">
+          <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl mb-4">
+            ✓
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800">
+            Sınav Tamamlandı!
+          </h2>
+          <p className="text-gray-500 mt-2">
+            Cevaplarınız başarıyla kaydedildi.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="p-4 bg-blue-50 rounded-xl">
+            <p className="text-sm text-blue-600 font-bold">TOPLAM PUAN</p>
+            <p className="text-3xl font-bold text-blue-800">
+              {examResult.score}
+            </p>
+          </div>
+          <div className="p-4 bg-green-50 rounded-xl">
+            <p className="text-sm text-green-600 font-bold">DOĞRU</p>
+            <p className="text-3xl font-bold text-green-800">
+              {examResult.correctCount}
+            </p>
+          </div>
+          <div className="p-4 bg-red-50 rounded-xl">
+            <p className="text-sm text-red-600 font-bold">YANLIŞ / BOŞ</p>
+            <p className="text-3xl font-bold text-red-800">
+              {examResult.wrongCount}
+            </p>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <p className="text-sm text-gray-600 font-bold">SORU SAYISI</p>
+            <p className="text-3xl font-bold text-gray-800">
+              {examResult.totalQuestions}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => router.push("/student/exam")}
+          className="bg-gray-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-black transition"
+        >
+          Sınav Listesine Dön
+        </button>
+      </div>
+    );
+  }
+
+  // --- SINAV EKRANI ---
   return (
     <div className="max-w-4xl mx-auto pb-20">
       {/* Üst Bilgi Çubuğu (Sticky) */}
