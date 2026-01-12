@@ -12,10 +12,19 @@ export default function ExamDetailPage() {
   const [exam, setExam] = useState<any>(null);
   const [pageLoading, setPageLoading] = useState(true);
 
+  // --- Sınav Genel Ayarları (Başlık, Tarih, Saat vb.) ---
+  const [examMeta, setExamMeta] = useState({
+    title: "",
+    date: "", // YYYY-MM-DD
+    time: "", // HH:MM
+    duration: 0,
+    weight: 0,
+  });
+
   // --- SORU STATE'LERİ ---
   const [questions, setQuestions] = useState<any[]>([]);
 
-  // Hangi soruyu düzenlediğimizi tutan state (null ise yeni ekleme modundayız)
+  // Hangi soruyu düzenlediğimizi tutan state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [newQuestion, setNewQuestion] = useState({
@@ -53,6 +62,20 @@ export default function ExamDetailPage() {
         if (data.questions && Array.isArray(data.questions)) {
           setQuestions(data.questions);
         }
+
+        // Meta verileri doldur
+        const d = new Date(data.date);
+        const dateStr = d.toISOString().split("T")[0];
+        const timeStr = d.toTimeString().slice(0, 5);
+
+        setExamMeta({
+          title: data.title,
+          date: dateStr,
+          time: timeStr,
+          duration: data.duration,
+          weight: data.weight || 0,
+        });
+
         setPageLoading(false);
       })
       .catch((err) => {
@@ -63,7 +86,6 @@ export default function ExamDetailPage() {
 
   // 2. LİSTEYE EKLE VEYA GÜNCELLE
   const handleAddOrUpdateQuestion = () => {
-    // Basit Validasyon
     if (!newQuestion.questionText) return alert("Soru metni boş olamaz.");
 
     if (newQuestion.questionType === "multiple_choice") {
@@ -75,18 +97,17 @@ export default function ExamDetailPage() {
     }
 
     if (editingIndex !== null) {
-      // --- GÜNCELLEME MODU ---
+      // Güncelleme
       const updatedQuestions = [...questions];
       updatedQuestions[editingIndex] = newQuestion;
       setQuestions(updatedQuestions);
-      setEditingIndex(null); // Modu sıfırla
+      setEditingIndex(null);
       alert("Soru güncellendi.");
     } else {
-      // --- EKLEME MODU ---
+      // Yeni Ekleme
       setQuestions([...questions, newQuestion]);
     }
 
-    // Formu temizle
     setNewQuestion({
       questionText: "",
       questionType: "multiple_choice",
@@ -98,7 +119,6 @@ export default function ExamDetailPage() {
 
   // 3. SORU SİLME
   const handleRemoveQuestion = (index: number) => {
-    // Eğer düzenleme modundaysak ve düzenlenen soruyu siliyorsak modu iptal et
     if (editingIndex === index) {
       setEditingIndex(null);
       setNewQuestion({
@@ -115,15 +135,13 @@ export default function ExamDetailPage() {
     setQuestions(updated);
   };
 
-  // --- DÜZENLEME MODUNU AÇMA ---
   const handleEditClick = (index: number) => {
     const questionToEdit = questions[index];
-    setNewQuestion({ ...questionToEdit }); // Formu doldur
-    setEditingIndex(index); // İndeksi kaydet
+    setNewQuestion({ ...questionToEdit });
+    setEditingIndex(index);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // --- DÜZENLEMEYİ İPTAL ETME ---
   const handleCancelEdit = () => {
     setEditingIndex(null);
     setNewQuestion({
@@ -137,12 +155,13 @@ export default function ExamDetailPage() {
 
   // 4. DEĞİŞİKLİKLERİ KAYDET
   const handleSaveChanges = async () => {
-    // --- KONTROL: Toplam Puan > 100 ise hata ver ---
     if (totalPoints > 100) {
       return alert(
         `Kaydetmek için soruların toplam puanı 100'ü geçmemelidir.\nŞu anki toplam: ${totalPoints}`
       );
     }
+
+    const fullDate = new Date(`${examMeta.date}T${examMeta.time}:00`);
 
     const token = localStorage.getItem("token");
     try {
@@ -157,13 +176,18 @@ export default function ExamDetailPage() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
+            title: examMeta.title,
+            date: fullDate,
+            duration: Number(examMeta.duration),
+            weight: Number(examMeta.weight),
             questions: questions,
           }),
         }
       );
 
       if (res.ok) {
-        alert("Sorular başarıyla kaydedildi!");
+        setExam((prev: any) => ({ ...prev, title: examMeta.title }));
+        alert("Sınav bilgileri ve sorular başarıyla kaydedildi!");
       } else {
         alert("Kaydederken bir hata oluştu.");
       }
@@ -174,7 +198,6 @@ export default function ExamDetailPage() {
 
   // 5. SINAVI YAYINLA
   const handlePublish = async () => {
-    // --- KONTROL: Toplam Puan TAM 100 OLMALI ---
     if (totalPoints !== 100) {
       return alert(
         `Yayınlamak için soruların toplam puanı tam 100 olmalıdır.\nŞu anki toplam: ${totalPoints}`
@@ -207,13 +230,45 @@ export default function ExamDetailPage() {
     }
   };
 
-  // --- RENK BELİRLEME YARDIMCISI ---
+  // --- YENİ EKLENEN: YAYINDAN KALDIR ---
+  const handleUnpublish = async () => {
+    if (
+      !confirm(
+        "Sınav yayından kaldırılacak. Öğrenciler artık bu sınavı göremeyecek. Emin misiniz?"
+      )
+    )
+      return;
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+        }/api/exams/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ isPublished: false }), // false gönderiyoruz
+        }
+      );
+      if (res.ok) {
+        setExam({ ...exam, isPublished: false });
+        alert("Sınav yayından kaldırıldı (Taslak moduna döndü).");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const getPointsBadgeStyle = () => {
     if (totalPoints === 100)
-      return "bg-green-100 text-green-700 border-green-300"; // İdeal
+      return "bg-green-100 text-green-700 border-green-300";
     if (totalPoints < 100)
-      return "bg-yellow-100 text-yellow-700 border-yellow-300"; // Eksik
-    return "bg-red-100 text-red-700 border-red-300"; // Fazla
+      return "bg-yellow-100 text-yellow-700 border-yellow-300";
+    return "bg-red-100 text-red-700 border-red-300";
   };
 
   if (loading || pageLoading) {
@@ -233,13 +288,14 @@ export default function ExamDetailPage() {
       {/* HEADER */}
       <div className="flex justify-between items-center border-b pb-4 bg-white p-4 rounded-xl shadow-sm">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{exam.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-800">
+            {examMeta.title || exam.title}
+          </h1>
           <p className="text-gray-500 mt-1">
             {exam.course?.name} ({exam.course?.courseCode})
           </p>
         </div>
         <div className="flex gap-3 items-center">
-          {/* Toplam Puan Göstergesi */}
           <div
             className={`px-4 py-2 rounded font-bold border flex flex-col items-end text-sm ${getPointsBadgeStyle()}`}
           >
@@ -266,6 +322,8 @@ export default function ExamDetailPage() {
           >
             Kaydet
           </button>
+
+          {/* YAYINLA / YAYINDAN KALDIR BUTONLARI */}
           {!exam.isPublished ? (
             <button
               onClick={handlePublish}
@@ -274,15 +332,101 @@ export default function ExamDetailPage() {
               Yayınla
             </button>
           ) : (
-            <span className="px-4 py-2 bg-gray-200 text-gray-600 rounded font-bold cursor-not-allowed">
-              Yayında
-            </span>
+            // Yayındaysa "Yayından Kaldır" butonu göster
+            <button
+              onClick={handleUnpublish}
+              className="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200 font-bold shadow transition-colors"
+            >
+              Yayından Kaldır 🚫
+            </button>
           )}
         </div>
       </div>
 
+      {/* GENEL AYARLAR */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">
+          Genel Sınav Ayarları
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Sınav Başlığı
+            </label>
+            <input
+              type="text"
+              className="w-full border rounded p-2"
+              value={examMeta.title}
+              onChange={(e) =>
+                setExamMeta({ ...examMeta, title: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Tarih
+            </label>
+            <input
+              type="date"
+              className="w-full border rounded p-2"
+              value={examMeta.date}
+              onChange={(e) =>
+                setExamMeta({ ...examMeta, date: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Saat
+            </label>
+            <input
+              type="time"
+              className="w-full border rounded p-2"
+              value={examMeta.time}
+              onChange={(e) =>
+                setExamMeta({ ...examMeta, time: e.target.value })
+              }
+            />
+          </div>
+          <div className="flex gap-2">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">
+                Süre (Dk)
+              </label>
+              <input
+                type="number"
+                className="w-full border rounded p-2"
+                value={examMeta.duration}
+                onChange={(e) =>
+                  setExamMeta({
+                    ...examMeta,
+                    duration: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">
+                Etki (%)
+              </label>
+              <input
+                type="number"
+                className="w-full border rounded p-2"
+                value={examMeta.weight}
+                onChange={(e) =>
+                  setExamMeta({
+                    ...examMeta,
+                    weight: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SORU ALANI (Sol: Form, Sağ: Liste) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* SOL KOLON: SORU FORM */}
         <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit sticky top-6">
           <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2 flex justify-between items-center">
             {editingIndex !== null ? "Soruyu Düzenle" : "Soru Ekle"}
@@ -343,7 +487,6 @@ export default function ExamDetailPage() {
               </div>
             </div>
 
-            {/* ŞIKLAR */}
             {newQuestion.questionType === "multiple_choice" && (
               <div className="space-y-2 bg-gray-50 p-3 rounded border border-gray-100">
                 <p className="text-xs font-bold text-gray-500 uppercase">
@@ -379,7 +522,6 @@ export default function ExamDetailPage() {
               </div>
             )}
 
-            {/* KLASİK */}
             {newQuestion.questionType === "text_input" && (
               <div>
                 <label className="block text-sm font-bold mb-1">
@@ -422,7 +564,6 @@ export default function ExamDetailPage() {
           </div>
         </div>
 
-        {/* SAĞ KOLON: SORU LİSTESİ */}
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-xl font-bold text-gray-800 flex justify-between">
             <span>Sınav Soruları ({questions.length})</span>
@@ -463,7 +604,6 @@ export default function ExamDetailPage() {
                           </span>
                         </div>
 
-                        {/* --- GÜNCELLENDİ: CEVAP DETAYLARI GERİ GELDİ --- */}
                         <div className="text-sm mt-2">
                           {q.questionType === "multiple_choice" ? (
                             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -501,12 +641,10 @@ export default function ExamDetailPage() {
                             </div>
                           )}
                         </div>
-                        {/* ----------------------------------------------- */}
                       </div>
                     </div>
 
                     <div className="flex flex-col gap-2 ml-4">
-                      {/* DÜZENLEME BUTONU */}
                       <button
                         onClick={() => handleEditClick(idx)}
                         className="text-yellow-600 hover:text-yellow-700 font-bold px-2 py-1 transition-colors border border-yellow-200 rounded bg-yellow-50 text-xs"
@@ -514,7 +652,6 @@ export default function ExamDetailPage() {
                         ✏️ Düzenle
                       </button>
 
-                      {/* SİLME BUTONU */}
                       <button
                         onClick={() => handleRemoveQuestion(idx)}
                         className="text-red-400 hover:text-red-600 font-bold px-2 py-1 transition-colors border border-red-200 rounded bg-red-50 text-xs"

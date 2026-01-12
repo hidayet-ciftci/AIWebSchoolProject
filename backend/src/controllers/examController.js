@@ -2,6 +2,7 @@
 
 const Exam = require("../models/Exam");
 const Course = require("../models/Course");
+const Grade = require("../models/Grade");
 
 // 1. Yeni Sınav Oluştur (Sadece iskelet)
 // 1. Yeni Sınav Oluştur
@@ -149,6 +150,22 @@ const getMyExams = async (req, res) => {
 const getExamForStudentToTake = async (req, res) => {
   try {
     const { id } = req.params;
+    const studentId = req.user.id; // verifyToken middleware'inden gelen ID
+
+    // --- YENİ KONTROL: Öğrenci daha önce bu sınava girmiş mi? ---
+    const existingGrade = await Grade.findOne({
+      exam: id,
+      student: studentId,
+    });
+
+    if (existingGrade) {
+      // Eğer notu varsa, sınava tekrar girmesine izin verme
+      return res.status(403).json({
+        message: "Bu sınavı zaten tamamladınız.",
+        isTaken: true,
+      });
+    }
+    // -------------------------------------------------------------
 
     // 1. Sınavı bul
     const exam = await Exam.findById(id).populate("course", "name");
@@ -160,7 +177,6 @@ const getExamForStudentToTake = async (req, res) => {
     // 2. Tarih ve Süre Kontrolü
     const now = new Date();
     const examStartDate = new Date(exam.date);
-    // Sınav bitiş zamanı = Başlangıç + Süre (dakika cinsinden)
     const examEndDate = new Date(
       examStartDate.getTime() + exam.duration * 60000
     );
@@ -175,22 +191,19 @@ const getExamForStudentToTake = async (req, res) => {
         .json({ message: "Sınav süresi doldu, giriş yapamazsınız." });
     }
 
-    // 3. Soruları Güvenli Hale Getir (correctAnswer alanını çıkar)
-    // .toObject() mongoose nesnesini düz JS nesnesine çevirir, böylece üzerinde oynayabiliriz.
+    // 3. Soruları Güvenli Hale Getir
     const examObj = exam.toObject();
-
     const safeQuestions = examObj.questions.map((q) => {
-      const { correctAnswer, ...safeQuestion } = q; // correctAnswer'ı ayırıp atıyoruz
+      const { correctAnswer, ...safeQuestion } = q;
       return safeQuestion;
     });
 
-    // Kalan süreyi hesapla (Milisaniye cinsinden frontend'e gönderelim)
     const remainingTime = examEndDate.getTime() - now.getTime();
 
     res.status(200).json({
       ...examObj,
-      questions: safeQuestions, // Cevapsız sorular
-      remainingTime: remainingTime, // Kalan süre (ms)
+      questions: safeQuestions,
+      remainingTime: remainingTime,
     });
   } catch (error) {
     console.error("Sınav detayı hatası:", error);
