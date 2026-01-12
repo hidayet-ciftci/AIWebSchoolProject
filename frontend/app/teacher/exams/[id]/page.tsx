@@ -12,19 +12,16 @@ export default function ExamDetailPage() {
   const [exam, setExam] = useState<any>(null);
   const [pageLoading, setPageLoading] = useState(true);
 
-  // --- Sınav Genel Ayarları (Başlık, Tarih, Saat vb.) ---
   const [examMeta, setExamMeta] = useState({
     title: "",
-    date: "", // YYYY-MM-DD
-    time: "", // HH:MM
+    date: "",
+    time: "",
     duration: 0,
     weight: 0,
   });
 
-  // --- SORU STATE'LERİ ---
   const [questions, setQuestions] = useState<any[]>([]);
 
-  // Hangi soruyu düzenlediğimizi tutan state
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [newQuestion, setNewQuestion] = useState({
@@ -35,10 +32,8 @@ export default function ExamDetailPage() {
     points: 10,
   });
 
-  // Toplam puanı anlık hesapla
   const totalPoints = questions.reduce((acc, q) => acc + (q.points || 0), 0);
 
-  // 1. SINAV DETAYLARINI ÇEK
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token || !id) return;
@@ -63,7 +58,6 @@ export default function ExamDetailPage() {
           setQuestions(data.questions);
         }
 
-        // Meta verileri doldur
         const d = new Date(data.date);
         const dateStr = d.toISOString().split("T")[0];
         const timeStr = d.toTimeString().slice(0, 5);
@@ -84,7 +78,6 @@ export default function ExamDetailPage() {
       });
   }, [id, user, loading]);
 
-  // 2. LİSTEYE EKLE VEYA GÜNCELLE
   const handleAddOrUpdateQuestion = () => {
     if (!newQuestion.questionText) return alert("Soru metni boş olamaz.");
 
@@ -97,14 +90,12 @@ export default function ExamDetailPage() {
     }
 
     if (editingIndex !== null) {
-      // Güncelleme
       const updatedQuestions = [...questions];
       updatedQuestions[editingIndex] = newQuestion;
       setQuestions(updatedQuestions);
       setEditingIndex(null);
       alert("Soru güncellendi.");
     } else {
-      // Yeni Ekleme
       setQuestions([...questions, newQuestion]);
     }
 
@@ -117,7 +108,6 @@ export default function ExamDetailPage() {
     });
   };
 
-  // 3. SORU SİLME
   const handleRemoveQuestion = (index: number) => {
     if (editingIndex === index) {
       setEditingIndex(null);
@@ -153,7 +143,6 @@ export default function ExamDetailPage() {
     });
   };
 
-  // 4. DEĞİŞİKLİKLERİ KAYDET
   const handleSaveChanges = async () => {
     if (totalPoints > 100) {
       return alert(
@@ -196,7 +185,6 @@ export default function ExamDetailPage() {
     }
   };
 
-  // 5. SINAVI YAYINLA
   const handlePublish = async () => {
     if (totalPoints !== 100) {
       return alert(
@@ -230,7 +218,6 @@ export default function ExamDetailPage() {
     }
   };
 
-  // --- YENİ EKLENEN: YAYINDAN KALDIR ---
   const handleUnpublish = async () => {
     if (
       !confirm(
@@ -251,7 +238,7 @@ export default function ExamDetailPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ isPublished: false }), // false gönderiyoruz
+          body: JSON.stringify({ isPublished: false }),
         }
       );
       if (res.ok) {
@@ -332,7 +319,6 @@ export default function ExamDetailPage() {
               Yayınla
             </button>
           ) : (
-            // Yayındaysa "Yayından Kaldır" butonu göster
             <button
               onClick={handleUnpublish}
               className="px-4 py-2 bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200 font-bold shadow transition-colors"

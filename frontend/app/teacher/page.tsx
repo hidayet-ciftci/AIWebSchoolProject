@@ -59,24 +59,15 @@ export default function TeacherDashboardHome() {
         if (!profile?._id) return;
 
         const [coursesRes, examsRes, gradesRes] = await Promise.all([
-          fetch(
-            `http://localhost:5000/api/courses/teacher/my-courses`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
-          fetch(
-            `http://localhost:5000/api/exams/teacher/${profile._id}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
-          fetch(
-            `http://localhost:5000/api/grades/teacher/my-grades`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
+          fetch(`http://localhost:5000/api/courses/teacher/my-courses`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`http://localhost:5000/api/exams/teacher/${profile._id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`http://localhost:5000/api/grades/teacher/my-grades`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
         if (coursesRes.ok) {
@@ -121,8 +112,6 @@ export default function TeacherDashboardHome() {
 
   const pendingExams = exams.filter((exam) => !exam.isPublished);
 
-
-  // Tarih formatlama
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("tr-TR", {
@@ -132,7 +121,6 @@ export default function TeacherDashboardHome() {
     });
   };
 
-  // Kalan gün hesaplama
   const getDaysRemaining = (dateString: string) => {
     const examDate = new Date(dateString);
     const diffTime = examDate.getTime() - now.getTime();
@@ -141,10 +129,24 @@ export default function TeacherDashboardHome() {
   };
 
   const getExamTypeColor = (examType: string) => {
-    const colors: { [key: string]: { bg: string; border: string; text: string } } = {
-      vize: { bg: "bg-[#fef5e7]", border: "border-[#f59e0b]", text: "text-[#d97706]" },
-      quiz: { bg: "bg-[#e0e7ff]", border: "border-[#667eea]", text: "text-[#667eea]" },
-      final: { bg: "bg-[#fce7f3]", border: "border-[#ec4899]", text: "text-[#ec4899]" },
+    const colors: {
+      [key: string]: { bg: string; border: string; text: string };
+    } = {
+      vize: {
+        bg: "bg-[#fef5e7]",
+        border: "border-[#f59e0b]",
+        text: "text-[#d97706]",
+      },
+      quiz: {
+        bg: "bg-[#e0e7ff]",
+        border: "border-[#667eea]",
+        text: "text-[#667eea]",
+      },
+      final: {
+        bg: "bg-[#fce7f3]",
+        border: "border-[#ec4899]",
+        text: "text-[#ec4899]",
+      },
     };
     return colors[examType] || colors.quiz;
   };
@@ -187,7 +189,7 @@ export default function TeacherDashboardHome() {
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+          <div className="w-12 h-12 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
             📚
           </div>
           <p className="text-sm text-[#718096] mb-1">Aktif Dersler</p>
@@ -195,77 +197,78 @@ export default function TeacherDashboardHome() {
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#f6ad55] to-[#ed8936] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+          <div className="w-12 h-12 bg-linear-to-br from-[#f6ad55] to-[#ed8936] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
             📝
           </div>
           <p className="text-sm text-[#718096] mb-1">Bekleyen Sınavlar</p>
-          <p className="text-2xl font-bold text-[#1a202c]">{pendingExams.length}</p>
+          <p className="text-2xl font-bold text-[#1a202c]">
+            {pendingExams.length}
+          </p>
         </div>
-
-
       </div>
 
-      {/* Upcoming Exams */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-[#1a202c]">Yaklaşan Sınavlar</h2>
-            <Link
-              href="/teacher/exams"
-              className="text-[#667eea] font-semibold text-sm hover:underline"
-            >
-              Tümünü Gör →
-            </Link>
-          </div>
-          {upcomingExams.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Yaklaşan sınavınız bulunmamaktadır.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {upcomingExams.map((exam) => {
-                const daysRemaining = getDaysRemaining(exam.date);
-                const colors = getExamTypeColor(exam.examType);
-                const examTypeLabel =
-                  exam.examType.charAt(0).toUpperCase() + exam.examType.slice(1);
-                const studentCount = getStudentCountForExam(exam);
-
-                return (
-                  <div
-                    key={exam._id}
-                    className={`p-4 ${colors.bg} border-l-4 ${colors.border} rounded-r-lg`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-bold text-[#1a202c]">{exam.title}</p>
-                        <p className="text-sm text-[#718096]">
-                          {studentCount} Öğrenci Katılacak
-                        </p>
-                      </div>
-                      <span
-                        className={`${colors.bg} ${colors.text} px-3 py-1 rounded-full text-xs font-bold border ${colors.border}`}
-                      >
-                        {daysRemaining > 0
-                          ? `${daysRemaining} Gün Kaldı`
-                          : "Bugün"}
-                      </span>
-                    </div>
-                    <div className="flex gap-4 text-sm text-[#718096] mb-3">
-                      <span>📅 {formatDate(exam.date)}</span>
-                      <span>⏱️ {exam.duration} dakika</span>
-                      <span className={colors.text}>📝 {examTypeLabel}</span>
-                    </div>
-                    <button
-                      onClick={() => router.push(`/teacher/exams/${exam._id}`)}
-                      className="w-full py-2 bg-[#667eea] text-white rounded-lg text-sm font-semibold hover:bg-[#5a6fd6] transition-colors cursor-pointer"
-                    >
-                      Sınav Detayları
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-[#1a202c]">
+            Yaklaşan Sınavlar
+          </h2>
+          <Link
+            href="/teacher/exams"
+            className="text-[#667eea] font-semibold text-sm hover:underline"
+          >
+            Tümünü Gör →
+          </Link>
         </div>
+        {upcomingExams.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Yaklaşan sınavınız bulunmamaktadır.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {upcomingExams.map((exam) => {
+              const daysRemaining = getDaysRemaining(exam.date);
+              const colors = getExamTypeColor(exam.examType);
+              const examTypeLabel =
+                exam.examType.charAt(0).toUpperCase() + exam.examType.slice(1);
+              const studentCount = getStudentCountForExam(exam);
+
+              return (
+                <div
+                  key={exam._id}
+                  className={`p-4 ${colors.bg} border-l-4 ${colors.border} rounded-r-lg`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold text-[#1a202c]">{exam.title}</p>
+                      <p className="text-sm text-[#718096]">
+                        {studentCount} Öğrenci Katılacak
+                      </p>
+                    </div>
+                    <span
+                      className={`${colors.bg} ${colors.text} px-3 py-1 rounded-full text-xs font-bold border ${colors.border}`}
+                    >
+                      {daysRemaining > 0
+                        ? `${daysRemaining} Gün Kaldı`
+                        : "Bugün"}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 text-sm text-[#718096] mb-3">
+                    <span>📅 {formatDate(exam.date)}</span>
+                    <span>⏱️ {exam.duration} dakika</span>
+                    <span className={colors.text}>📝 {examTypeLabel}</span>
+                  </div>
+                  <button
+                    onClick={() => router.push(`/teacher/exams/${exam._id}`)}
+                    className="w-full py-2 bg-[#667eea] text-white rounded-lg text-sm font-semibold hover:bg-[#5a6fd6] transition-colors cursor-pointer"
+                  >
+                    Sınav Detayları
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* My Courses */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -294,7 +297,9 @@ export default function TeacherDashboardHome() {
                   className="p-4 bg-[#f7fafc] rounded-lg border border-gray-200 hover:border-[#667eea] transition-colors"
                 >
                   <p className="font-bold text-[#1a202c] mb-1">{course.name}</p>
-                  <p className="text-xs text-[#718096] mb-3">{course.courseCode}</p>
+                  <p className="text-xs text-[#718096] mb-3">
+                    {course.courseCode}
+                  </p>
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-[#667eea]">
                       👥 {studentCount} Öğrenci

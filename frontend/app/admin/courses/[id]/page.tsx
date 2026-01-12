@@ -22,15 +22,14 @@ export default function EditCoursePage() {
 
   const [formData, setFormData] = useState({
     name: "",
-    courseCode: "", // YENİ
-    lessonNumber: "", // YENİ
+    courseCode: "",
+    lessonNumber: "",
     teacher: "",
     students: [] as string[],
     status: "Aktif",
   });
 
   useEffect(() => {
-    // 1. Kullanıcıları Çek
     const fetchUsers = async () => {
       try {
         const res = await fetch("http://localhost:5000/api/users");
@@ -44,7 +43,6 @@ export default function EditCoursePage() {
       }
     };
 
-    // 2. Mevcut Dersi Çek ve Formu Doldur
     const fetchCourseDetails = async () => {
       try {
         const res = await fetch(

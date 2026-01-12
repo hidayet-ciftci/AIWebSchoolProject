@@ -1,10 +1,9 @@
 "use client";
 
-import { useProfile } from "@/hooks/useProfile"; // Hook'u import et
-import ProfileCard from "@/components/ProfileCard"; // Bileşeni import et
+import { useProfile } from "@/hooks/useProfile";
+import ProfileCard from "@/components/ProfileCard";
 
 export default function ProfilePage() {
-  // Bütün fetch işlemini bu tek satır hallediyor
   const { profile, loading } = useProfile();
 
   if (loading) {

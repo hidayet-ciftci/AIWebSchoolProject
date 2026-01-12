@@ -37,7 +37,7 @@ interface CourseGrades {
     score: number;
     weight: number;
     date: string;
-    isGraded: boolean; // Girilmiş mi?
+    isGraded: boolean;
   }[];
   weightedAverage: number;
   totalWeight: number;
@@ -116,7 +116,7 @@ export default function GradesPage() {
         score: examScore, // null ise 0
         weight: grade.exam.weight,
         date: grade.exam.date,
-        isGraded: grade.score !== null, // Girilmiş mi kontrolü
+        isGraded: grade.score !== null,
       });
       courseData.totalWeight += grade.exam.weight;
     });

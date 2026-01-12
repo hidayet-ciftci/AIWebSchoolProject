@@ -45,10 +45,9 @@ export default function CourseDetailPage({
 
     alert("Dosya yüklendi!");
     setFile(null);
-    fetchCourse(); // Listeyi yenile
+    fetchCourse();
   };
 
-  // Dosya Silme Fonksiyonu
   const handleDelete = async (materialId: string) => {
     if (!confirm("Silmek istediğine emin misin?")) return;
     const token = localStorage.getItem("token");

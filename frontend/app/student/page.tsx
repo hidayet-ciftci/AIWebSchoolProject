@@ -41,6 +41,7 @@ interface Grade {
     courseCode: string;
   };
   exam: {
+    weight: number;
     _id: string;
     title: string;
     examType: string;
@@ -119,7 +120,9 @@ export default function StudentDashboardHome() {
     .slice(0, 3);
 
   const calculateOverallAverage = () => {
-    const courseAverages: { [key: string]: { sum: number; totalWeight: number } } = {};
+    const courseAverages: {
+      [key: string]: { sum: number; totalWeight: number };
+    } = {};
 
     grades.forEach((grade) => {
       if (!grade.exam || grade.score === null) return;
@@ -163,10 +166,24 @@ export default function StudentDashboardHome() {
   };
 
   const getExamTypeColor = (examType: string) => {
-    const colors: { [key: string]: { bg: string; border: string; text: string } } = {
-      vize: { bg: "bg-[#fef5e7]", border: "border-[#f59e0b]", text: "text-[#d97706]" },
-      quiz: { bg: "bg-[#e0e7ff]", border: "border-[#667eea]", text: "text-[#667eea]" },
-      final: { bg: "bg-[#fce7f3]", border: "border-[#ec4899]", text: "text-[#ec4899]" },
+    const colors: {
+      [key: string]: { bg: string; border: string; text: string };
+    } = {
+      vize: {
+        bg: "bg-[#fef5e7]",
+        border: "border-[#f59e0b]",
+        text: "text-[#d97706]",
+      },
+      quiz: {
+        bg: "bg-[#e0e7ff]",
+        border: "border-[#667eea]",
+        text: "text-[#667eea]",
+      },
+      final: {
+        bg: "bg-[#fce7f3]",
+        border: "border-[#ec4899]",
+        text: "text-[#ec4899]",
+      },
     };
     return colors[examType] || colors.quiz;
   };
@@ -215,7 +232,7 @@ export default function StudentDashboardHome() {
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+          <div className="w-12 h-12 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
             📚
           </div>
           <p className="text-sm text-[#718096] mb-1">Aktif Dersler</p>
@@ -223,23 +240,27 @@ export default function StudentDashboardHome() {
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#48bb78] to-[#38a169] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+          <div className="w-12 h-12 bg-linear-to-br from-[#48bb78] to-[#38a169] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
             ✅
           </div>
           <p className="text-sm text-[#718096] mb-1">Tamamlanan Sınavlar</p>
-          <p className="text-2xl font-bold text-[#1a202c]">{completedExamsCount}</p>
+          <p className="text-2xl font-bold text-[#1a202c]">
+            {completedExamsCount}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#f6ad55] to-[#ed8936] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+          <div className="w-12 h-12 bg-linear-to-br from-[#f6ad55] to-[#ed8936] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
             ⏰
           </div>
           <p className="text-sm text-[#718096] mb-1">Yaklaşan Sınavlar</p>
-          <p className="text-2xl font-bold text-[#1a202c]">{upcomingExams.length}</p>
+          <p className="text-2xl font-bold text-[#1a202c]">
+            {upcomingExams.length}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#fc8181] to-[#f56565] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+          <div className="w-12 h-12 bg-linear-to-br from-[#fc8181] to-[#f56565] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
             📊
           </div>
           <p className="text-sm text-[#718096] mb-1">Toplam Not</p>
@@ -254,7 +275,9 @@ export default function StudentDashboardHome() {
         {/* Upcoming Exams (2 Columns) */}
         <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-[#1a202c]">Yaklaşan Sınavlar</h2>
+            <h2 className="text-xl font-bold text-[#1a202c]">
+              Yaklaşan Sınavlar
+            </h2>
             <Link
               href="/student/exam"
               className="text-[#667eea] font-semibold text-sm hover:underline"
@@ -272,7 +295,8 @@ export default function StudentDashboardHome() {
                 const daysRemaining = getDaysRemaining(exam.date);
                 const colors = getExamTypeColor(exam.examType);
                 const examTypeLabel =
-                  exam.examType.charAt(0).toUpperCase() + exam.examType.slice(1);
+                  exam.examType.charAt(0).toUpperCase() +
+                  exam.examType.slice(1);
 
                 return (
                   <div
@@ -336,7 +360,9 @@ export default function StudentDashboardHome() {
                     className={`p-4 ${colors.bg} rounded-lg flex justify-between items-center`}
                   >
                     <div>
-                      <p className="font-bold text-[#1a202c]">{grade.course.name}</p>
+                      <p className="font-bold text-[#1a202c]">
+                        {grade.course.name}
+                      </p>
                       <p className="text-xs text-[#718096]">
                         {examTypeLabel} - {grade.exam.title}
                       </p>
@@ -375,7 +401,9 @@ export default function StudentDashboardHome() {
                 className="p-4 bg-[#f7fafc] rounded-lg border border-gray-200 hover:border-[#667eea] transition-colors"
               >
                 <p className="font-bold text-[#1a202c] mb-1">{course.name}</p>
-                <p className="text-xs text-[#718096] mb-2">{course.courseCode}</p>
+                <p className="text-xs text-[#718096] mb-2">
+                  {course.courseCode}
+                </p>
                 <p className="text-sm text-[#667eea]">
                   👨‍🏫 {course.teacher?.name} {course.teacher?.surname}
                 </p>

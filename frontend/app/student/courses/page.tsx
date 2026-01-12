@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link"; // Link bileşenini import etmeyi unutma!
+import Link from "next/link";
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
@@ -39,7 +39,6 @@ export default function CoursesPage() {
               {course.name}
             </h3>
             <p className="text-gray-500 mb-4">
-              {/* Öğretmen bilgisi backend'den 'populate' ile geliyorsa: */}
               {course.teacher?.name} {course.teacher?.surname}
             </p>
             <div className="flex justify-between items-center">
@@ -47,7 +46,6 @@ export default function CoursesPage() {
                 {course.lessonNumber || 0} Ders
               </span>
 
-              {/* İŞTE SORDUĞUN KISIM BURASI 👇 */}
               <Link
                 href={`/student/courses/${course._id}`}
                 className="bg-[#e6fffa] text-[#319795] px-4 py-2 rounded-lg font-bold hover:bg-[#b2f5ea]"

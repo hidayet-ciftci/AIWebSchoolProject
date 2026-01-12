@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Exam } from "@/types"; // Types dosyanızdaki Exam interface'i
+import { Exam } from "@/types";
 
 export default function ExamPage() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -23,7 +23,7 @@ export default function ExamPage() {
           `http://localhost:5000/api/exams/student/my-exams`,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Backend 'User'ı buradan tanıyacak
+              Authorization: `Bearer ${token}`,
             },
           }
         );
@@ -49,15 +49,15 @@ export default function ExamPage() {
       day: "numeric",
       month: "long",
       year: "numeric",
-      hour: "2-digit", // Saati ekledik
-      minute: "2-digit", // Dakikayı ekledik
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getStatus = (examDate: string, duration: number) => {
     const now = new Date();
     const start = new Date(examDate);
-    const end = new Date(start.getTime() + duration * 60000); // dk -> ms çevrimi
+    const end = new Date(start.getTime() + duration * 60000);
 
     if (now < start)
       return { label: "Yaklaşıyor", color: "bg-[#fef5e7] text-[#d97706]" };

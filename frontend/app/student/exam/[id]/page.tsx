@@ -76,9 +76,7 @@ export default function TakeExamPage() {
     };
   }, [params.id, router]);
 
-  // Sayaç Mantığı
   useEffect(() => {
-    // Sonuç varsa sayacı durdur
     if (examResult) return;
 
     if (timeLeft > 0) {
@@ -224,7 +222,7 @@ export default function TakeExamPage() {
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
-      {/* Üst Bilgi Çubuğu (Sticky) */}
+      {/* Üst Bilgi Çubuğu */}
       <div className="sticky top-0 z-10 bg-white shadow-md p-4 rounded-b-xl flex justify-between items-center mb-6 border-t-4 border-blue-600">
         <div>
           <h1 className="text-xl font-bold text-gray-800">{exam?.title}</h1>

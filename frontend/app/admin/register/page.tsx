@@ -8,7 +8,6 @@ import { UserProfile } from "@/types";
 export default function CreateUserPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  // Form verileri - Login sayfasından alınan tüm alanlar burada
   const [formData, setFormData] = useState<UserProfile>({
     name: "",
     surname: "",
@@ -16,7 +15,7 @@ export default function CreateUserPage() {
     gender: "",
     email: "",
     password: "",
-    role: "student", // Varsayılan olarak öğrenci seçili gelir
+    role: "student",
   });
 
   const handleChange = (
@@ -28,7 +27,6 @@ export default function CreateUserPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basit validasyon
     if (!formData.role) {
       toast.error("Lütfen bir rol seçin");
       return;

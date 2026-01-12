@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Tipler
 interface UserProfile {
   _id: string;
   name: string;
@@ -22,9 +21,9 @@ export default function CreateCoursePage() {
   // Form State
   const [formData, setFormData] = useState({
     name: "",
-    courseCode: "", // YENİ: Ders Kodu (Örn: BSM101)
-    lessonNumber: "", // YENİ: Ders Sayısı (Örn: 14)
-    teacher: "", // Backend teacher ID bekliyor
+    courseCode: "",
+    lessonNumber: "",
+    teacher: "",
     students: [] as string[],
     status: "Aktif",
   });

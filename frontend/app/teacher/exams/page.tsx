@@ -93,7 +93,7 @@ export default function TeacherExamsPage() {
           },
           body: JSON.stringify({
             ...formData,
-            teacherId: user._id, // User ID buradan gidiyor
+            teacherId: user._id,
           }),
         }
       );

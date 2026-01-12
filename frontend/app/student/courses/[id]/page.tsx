@@ -7,18 +7,16 @@ export default function StudentCourseDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // params promise yapısını çözümlüyoruz
   const { id } = use(params);
 
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Ders detaylarını API'den çek
   useEffect(() => {
     const fetchCourse = async () => {
       try {
         const token = localStorage.getItem("token");
-        // Backend'deki getCourseById rotasını kullanıyoruz
+
         const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
