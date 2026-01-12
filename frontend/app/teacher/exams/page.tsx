@@ -11,6 +11,7 @@ export default function TeacherExamsPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Sadece temel bilgiler
   const [formData, setFormData] = useState({
     courseId: "",
     examType: "vize",
@@ -23,36 +24,22 @@ export default function TeacherExamsPage() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // --- DÜZELTİLEN KISIM BURASI ---
-    // Backend'de zaten var olan "/teacher/my-courses" rotasını kullanıyoruz.
-    // Böylece backend koduna dokunmana gerek kalmıyor.
+    // Dersleri Getir
     fetch(
       `${
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
       }/api/courses/teacher/my-courses`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       }
     )
-      .then((res) => {
-        if (!res.ok) throw new Error("Dersler çekilemedi");
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        // Gelen veri array mi kontrol et, değilse boş array yap
-        if (Array.isArray(data)) {
-          setCourses(data);
-        } else {
-          console.error("Ders verisi dizi formatında gelmedi:", data);
-          setCourses([]);
-        }
+        if (Array.isArray(data)) setCourses(data);
       })
-      .catch((err) => console.error("Ders yükleme hatası:", err));
-    // -------------------------------
+      .catch((err) => console.error("Ders hatası:", err));
 
-    // Sınavları getir (Burada da user._id kullanıyorduk, o çalışıyordu)
+    // Sınavları Getir
     if (user?._id) {
       fetch(
         `${
@@ -66,7 +53,7 @@ export default function TeacherExamsPage() {
         .then((data) => {
           if (Array.isArray(data)) setExams(data);
         })
-        .catch((err) => console.error("Sınavlar yüklenemedi:", err));
+        .catch((err) => console.error("Sınav hatası:", err));
     }
   }, [user]);
 
@@ -96,6 +83,7 @@ export default function TeacherExamsPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Detay sayfasına yönlendir (Sorular orada eklenecek)
         router.push(`/teacher/exams/${data.exam._id}`);
       } else {
         alert("Hata: " + data.message);
@@ -107,9 +95,8 @@ export default function TeacherExamsPage() {
   };
 
   const handleDeleteExam = async (examId: string) => {
-    if (!confirm("Bu sınavı silmek istediğinize emin misiniz?")) return;
+    if (!confirm("Silmek istediğinize emin misiniz?")) return;
     const token = localStorage.getItem("token");
-
     try {
       const res = await fetch(
         `${
@@ -120,29 +107,25 @@ export default function TeacherExamsPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      if (res.ok) {
-        setExams(exams.filter((e) => e._id !== examId));
-      } else {
-        alert("Silme işlemi başarısız oldu.");
-      }
-    } catch (error) {
-      console.error("Silme hatası:", error);
+      if (res.ok) setExams(exams.filter((e) => e._id !== examId));
+    } catch (err) {
+      console.error(err);
     }
   };
 
   return (
-    <div className="animate-fadeIn p-6">
+    <div className="animate-fadeIn p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-[#1a202c]">Sınav Yönetimi</h1>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-6 py-3 bg-[#667eea] text-white rounded-lg font-semibold hover:bg-[#5a67d8] transition"
+          className="px-6 py-3 bg-[#667eea] text-white rounded-lg font-semibold hover:bg-[#5a67d8] transition shadow-lg"
         >
           + Yeni Sınav Oluştur
         </button>
       </div>
 
+      {/* Sınav Listesi */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-600 font-bold border-b">
@@ -160,7 +143,7 @@ export default function TeacherExamsPage() {
                   {exam.title}
                 </td>
                 <td className="p-4 text-gray-600">
-                  {exam.course?.name || "Bilinmiyor"}
+                  {exam.course?.name || "..."}
                 </td>
                 <td className="p-4 text-gray-600">
                   {new Date(exam.date).toLocaleDateString("tr-TR")}
@@ -168,13 +151,13 @@ export default function TeacherExamsPage() {
                 <td className="p-4">
                   <button
                     onClick={() => router.push(`/teacher/exams/${exam._id}`)}
-                    className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 mr-2"
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm font-medium mr-2"
                   >
                     Düzenle / Sorular
                   </button>
                   <button
                     onClick={() => handleDeleteExam(exam._id)}
-                    className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                    className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm font-medium"
                   >
                     Sil
                   </button>
@@ -184,33 +167,36 @@ export default function TeacherExamsPage() {
           </tbody>
         </table>
         {exams.length === 0 && (
-          <div className="p-6 text-center text-gray-500">
-            Henüz sınav oluşturulmamış.
+          <div className="p-8 text-center text-gray-500">
+            Henüz hiç sınav oluşturmadınız.
           </div>
         )}
       </div>
 
+      {/* MODAL: Sadece Sınav Bilgileri */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg">
-            <h2 className="text-2xl font-bold mb-4">Yeni Sınav Oluştur</h2>
+        <div className="fixed inset-0  flex items-center justify-center z-50 backdrop-blur-md">
+          <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl mt-40">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              Yeni Sınav Oluştur
+            </h2>
             <form onSubmit={handleCreateExam} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-semibold mb-1">
                   Ders Seçin
                 </label>
                 <select
                   required
-                  className="w-full border rounded p-2"
+                  className="w-full border rounded-lg p-2.5 bg-white"
                   value={formData.courseId}
                   onChange={(e) =>
                     setFormData({ ...formData, courseId: e.target.value })
                   }
                 >
                   <option value="">Seçiniz...</option>
-                  {courses.map((course) => (
-                    <option key={course._id} value={course._id}>
-                      {course.name} ({course.courseCode})
+                  {courses.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name} ({c.courseCode})
                     </option>
                   ))}
                 </select>
@@ -218,25 +204,11 @@ export default function TeacherExamsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Tarih
-                  </label>
-                  <input
-                    required
-                    type="date"
-                    className="w-full border rounded p-2"
-                    value={formData.date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, date: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-semibold mb-1">
                     Sınav Tipi
                   </label>
                   <select
-                    className="w-full border rounded p-2"
+                    className="w-full border rounded-lg p-2.5 bg-white"
                     value={formData.examType}
                     onChange={(e) =>
                       setFormData({ ...formData, examType: e.target.value })
@@ -247,16 +219,30 @@ export default function TeacherExamsPage() {
                     <option value="final">Final</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">
+                    Tarih
+                  </label>
+                  <input
+                    required
+                    type="date"
+                    className="w-full border rounded-lg p-2.5 bg-white"
+                    value={formData.date}
+                    onChange={(e) =>
+                      setFormData({ ...formData, date: e.target.value })
+                    }
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-semibold mb-1">
                     Süre (Dk)
                   </label>
                   <input
                     type="number"
-                    className="w-full border rounded p-2"
+                    className="w-full border rounded-lg p-2.5 bg-white"
                     value={formData.duration}
                     onChange={(e) =>
                       setFormData({
@@ -267,12 +253,12 @@ export default function TeacherExamsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Etki Oranı (%)
+                  <label className="block text-sm font-semibold mb-1">
+                    Etki (%)
                   </label>
                   <input
                     type="number"
-                    className="w-full border rounded p-2"
+                    className="w-full border rounded-lg p-2.5 bg-white"
                     value={formData.weight}
                     onChange={(e) =>
                       setFormData({
@@ -284,19 +270,19 @@ export default function TeacherExamsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 mt-6">
+              <div className="flex justify-end gap-3 mt-8">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-[#667eea] text-white rounded hover:bg-[#5a67d8]"
+                  className="px-6 py-2 bg-[#667eea] text-white rounded-lg hover:bg-[#5a67d8] font-bold"
                 >
-                  Oluştur ve Devam Et
+                  Oluştur
                 </button>
               </div>
             </form>
