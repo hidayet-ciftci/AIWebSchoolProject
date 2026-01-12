@@ -18,6 +18,14 @@ const courseSchema = new mongoose.Schema({
   lessonNumber: { type: Number, required: true },
   source: { type: String, default: "" },
   status: { type: String },
+  materials: [
+    {
+      title: { type: String }, // Dosya görünen adı
+      fileName: { type: String }, // Sunucudaki dosya adı
+      fileUrl: { type: String }, // Erişilebilir URL
+      uploadedAt: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 module.exports = mongoose.model("courses", courseSchema); //
