@@ -107,7 +107,6 @@ export default function StudentLayout({
             : "text-gray-400 hover:bg-white/10 hover:text-white"
         }`}
       >
-        <span className="text-xl">{icon}</span>
         <span className="font-medium">{label}</span>
       </Link>
     );
@@ -142,8 +141,8 @@ export default function StudentLayout({
         }`}
       >
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
-            👨‍🎓
+          <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+            {profile?.name?.charAt(0).toUpperCase() || "Ö"}
           </div>
           <h2 className="font-semibold text-lg">
             {profile?.name || "Öğrenci"}
@@ -152,19 +151,19 @@ export default function StudentLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
-          <NavLink href="/student" icon="🏠" label="Anasayfa" />
-          <NavLink href="/student/profile" icon="👤" label="Profil" />
-          <NavLink href="/student/courses" icon="📚" label="Dersler" />
-          <NavLink href="/student/exam" icon="📝" label="Sınavlar" />
-          <NavLink href="/student/grades" icon="📊" label="Notlar" />
-          <NavLink href="/student/chatbot" icon="🤖" label="ChatBot" />
+          <NavLink href="/student" icon="" label="Anasayfa" />
+          <NavLink href="/student/profile" icon="" label="Profil" />
+          <NavLink href="/student/courses" icon="" label="Dersler" />
+          <NavLink href="/student/exam" icon="" label="Sınavlar" />
+          <NavLink href="/student/grades" icon="" label="Notlar" />
+          <NavLink href="/student/chatbot" icon="" label="ChatBot" />
         </nav>
 
         <button
           onClick={handleLogout}
           className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-semibold mt-4 flex items-center justify-center gap-2 cursor-pointer"
         >
-          🚪 Çıkış Yap
+          Çıkış Yap
         </button>
       </aside>
       {/* Main Content */}

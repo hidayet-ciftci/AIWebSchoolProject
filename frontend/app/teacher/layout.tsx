@@ -103,7 +103,6 @@ export default function TeacherLayout({
             : "text-gray-400 hover:bg-white/10"
         }`}
       >
-        <span className="text-xl">{icon}</span>
         <span className="font-medium">{label}</span>
       </Link>
     );
@@ -139,8 +138,8 @@ export default function TeacherLayout({
         }`}
       >
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
-            👨‍🏫
+          <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+            {profile?.name?.charAt(0).toUpperCase() || "Ö"}
           </div>
           {/* Dinamik İsim Gösterimi */}
           <h2 className="font-semibold text-lg">
@@ -150,19 +149,19 @@ export default function TeacherLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
-          <NavLink href="/teacher" icon="🏠" label="Anasayfa" />
-          <NavLink href="/teacher/profile" icon="👤" label="Profil" />
-          <NavLink href="/teacher/courses" icon="📚" label="Dersler" />
-          <NavLink href="/teacher/exams" icon="📝" label="Sınavlar" />
-          <NavLink href="/teacher/grades" icon="📊" label="Notlar" />
-          <NavLink href="/teacher/chatbot" icon="🤖" label="ChatBot" />
+          <NavLink href="/teacher" icon="" label="Anasayfa" />
+          <NavLink href="/teacher/profile" icon="" label="Profil" />
+          <NavLink href="/teacher/courses" icon="" label="Dersler" />
+          <NavLink href="/teacher/exams" icon="" label="Sınavlar" />
+          <NavLink href="/teacher/grades" icon="" label="Notlar" />
+          <NavLink href="/teacher/chatbot" icon="" label="ChatBot" />
         </nav>
 
         <button
           onClick={handleLogout}
           className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-semibold mt-4 cursor-pointer flex items-center justify-center gap-2"
         >
-          🚪 Çıkış Yap
+          Çıkış Yap
         </button>
       </aside>
 

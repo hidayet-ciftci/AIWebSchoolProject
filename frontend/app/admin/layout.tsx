@@ -82,7 +82,6 @@ export default function AdminLayout({
             : "text-gray-400 hover:bg-white/10"
         }`}
       >
-        <span className="text-xl">{icon}</span>
         <span className="font-medium">{label}</span>
       </Link>
     );
@@ -109,8 +108,8 @@ export default function AdminLayout({
         }`}
       >
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
-            🛡️
+          <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+            {profile?.name?.charAt(0).toUpperCase() || "Y"}
           </div>
           <h2 className="font-semibold text-lg">
             {profile?.name || "Yönetici"}
@@ -119,17 +118,17 @@ export default function AdminLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
-          <NavLink href="/admin" icon="🏠" label="Anasayfa" />
-          <NavLink href="/admin/profile" icon="👤" label="Profil" />
-          <NavLink href="/admin/courses" icon="📚" label="Ders Yönetimi" />
-          <NavLink href="/admin/register" icon="➕" label="Kullanıcı Ekle" />
+          <NavLink href="/admin" icon="" label="Anasayfa" />
+          <NavLink href="/admin/profile" icon="" label="Profil" />
+          <NavLink href="/admin/courses" icon="" label="Ders Yönetimi" />
+          <NavLink href="/admin/register" icon="" label="Kullanıcı Ekle" />
         </nav>
 
         <button
           onClick={handleLogout}
           className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-semibold mt-4 cursor-pointer flex items-center justify-center gap-2"
         >
-          🚪 Çıkış Yap
+          Çıkış Yap
         </button>
       </aside>
 
