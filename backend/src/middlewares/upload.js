@@ -1,41 +1,60 @@
 const multer = require("multer");
-const path = require("path");
 const fs = require("fs");
+const path = require("path");
 
-//klasör kontrolü, yoksa oluşturur
-//Bu yüzden projenin başlangıcında (Initialization Phase) Sync kullanmak güvenlidir ve Best
-//Practice'tir. Çünkü "Klasör yoksa sunucuyu hiç başlatma, bekle" demek istersin.
-const uploadDir = "uploads/";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-//depolama
+// Dosyanın kaydedileceği yer ve isim ayarları
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/");
+    // 1. Hedef klasör yolu: proje_ana_dizini/uploads/notes
+    const uploadPath = path.join("uploads", "notes");
+
+    // 2. Klasör yoksa oluştur (recursive: true, iç içe klasör oluşturur)
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
+    // 3. Dosya ismini düzenle: Rastgele karakter yerine Tarih + Orijinal İsim
+    // Örnek: 17156230005-ders-notu.pdf
+
+    // Türkçe karakterleri ve boşlukları temizle (isteğe bağlı ama önerilir)
+    const sanitizedName = file.originalname
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9.\-_]/g, "");
+
+    const uniqueSuffix = Date.now() + "-" + sanitizedName;
+    cb(null, uniqueSuffix);
   },
 });
 
-//dosya filtresi
+// Sadece belirli dosya türlerine izin verelim (isteğe bağlı güvenlik)
 const fileFilter = (req, file, cb) => {
-  if (file.fieldname === "profileImage") {
-    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-      return cb(new Error("please load image file", false));
-    }
+  const allowedTypes = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "image/jpeg",
+    "image/png",
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        "Desteklenmeyen dosya türü! Sadece PDF, Word ve Resim yükleyebilirsiniz."
+      ),
+      false
+    );
   }
-  cb(null, true);
 };
-// multer'ı hazırlama
+
 const upload = multer({
   storage: storage,
+  limits: { fileSize: 1024 * 1024 * 100 }, // Maksimum 100MB
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 module.exports = upload;

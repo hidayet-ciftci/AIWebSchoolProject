@@ -119,7 +119,8 @@ const uploadMaterial = async (req, res, next) => {
     const newMaterial = {
       title: title || req.file.originalname,
       fileName: req.file.filename,
-      fileUrl: `/uploads/${req.file.filename}`, // Dosya yolu (backend serve ayarına göre değişir)
+      fileUrl: `/uploads/notes/${req.file.filename}`, // Dosya yolu (backend serve ayarına göre değişir)
+      uploadedAt: Date.now(),
     };
 
     const updatedCourse = await Course.findByIdAndUpdate(

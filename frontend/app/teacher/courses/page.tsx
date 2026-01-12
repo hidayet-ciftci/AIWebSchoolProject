@@ -38,7 +38,7 @@ export default function TeacherCoursesPage() {
             <p className="text-gray-500 mb-4">{course.courseCode}</p>
             <Link
               href={`/teacher/courses/${course._id}`}
-              className="block text-center w-full py-2 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold"
+              className="block text-center w-full py-2 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-semibold"
             >
               Derse Git / Yönet
             </Link>
