@@ -212,7 +212,7 @@ export default function TeacherExamsPage() {
       {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md">
-          <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl mt-40">
+          <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl mt-80">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
               Yeni Sınav Oluştur
             </h2>
