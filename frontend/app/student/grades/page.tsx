@@ -235,7 +235,7 @@ export default function GradesPage() {
               <div className="mt-4">
                 <div className="w-full bg-[#f7fafc] rounded-full h-3 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-[#667eea] to-[#764ba2] h-full rounded-full transition-all"
+                    className="bg-linear-to-r from-[#667eea] to-[#764ba2] h-full rounded-full transition-all"
                     style={{
                       width: `${Math.min(course.weightedAverage, 100)}%`,
                     }}
