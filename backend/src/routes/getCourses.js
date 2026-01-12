@@ -13,10 +13,10 @@ router.get("/list1", async (req, res, next) => {
 });
 
 router.get("/", courseController.getCourses);
-router.get("/:id", courseController.getCourseById);
-
 router.post("/create", courseController.createCourse);
-router.put("/update", courseController.updateCourse);
-router.delete("/delete", courseController.deleteCourse);
+
+router.get("/:id", courseController.getCourseById);
+router.put("/update/:id", courseController.updateCourse);
+router.delete("/delete/:id", courseController.deleteCourse);
 
 module.exports = router;
