@@ -22,8 +22,9 @@ export default function EditCoursePage() {
 
   const [formData, setFormData] = useState({
     name: "",
-    lessonNumber: "",
-    teacher: "", // Backend "teacher" objectID bekler
+    courseCode: "", // YENİ
+    lessonNumber: "", // YENİ
+    teacher: "",
     students: [] as string[],
     status: "Aktif",
   });
@@ -43,7 +44,7 @@ export default function EditCoursePage() {
       }
     };
 
-    // 2. Mevcut Dersi Çek
+    // 2. Mevcut Dersi Çek ve Formu Doldur
     const fetchCourseDetails = async () => {
       try {
         const res = await fetch(
@@ -51,12 +52,12 @@ export default function EditCoursePage() {
         );
         if (res.ok) {
           const data = await res.json();
-          // Gelen veriyi forma uygun hale getiriyoruz
           setFormData({
             name: data.name,
-            lessonNumber: data.lessonNumber,
-            teacher: data.teacher ? data.teacher._id : "", // Populated geldigi icin _id aliyoruz
-            students: data.students.map((s: any) => s._id), // Populated array'den ID array'e ceviriyoruz
+            courseCode: data.courseCode || "", // Backend'den geleni eşle
+            lessonNumber: data.lessonNumber || "", // Backend'den geleni eşle
+            teacher: data.teacher ? data.teacher._id : "",
+            students: data.students.map((s: any) => s._id),
             status: data.status || "Aktif",
           });
         }
@@ -89,7 +90,6 @@ export default function EditCoursePage() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Backend route: /update/:id olarak ayarlamistik
       const res = await fetch(
         `http://localhost:5000/api/courses/update/${courseId}`,
         {
@@ -121,7 +121,7 @@ export default function EditCoursePage() {
 
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="col-span-1 md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Ders Adı
               </label>
@@ -133,9 +133,23 @@ export default function EditCoursePage() {
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Ders Kodu
+                Ders Kodu (Code)
+              </label>
+              <input
+                type="text"
+                name="courseCode"
+                value={formData.courseCode}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Ders Sayısı
               </label>
               <input
                 type="number"

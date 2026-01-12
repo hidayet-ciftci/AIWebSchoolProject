@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Tipler
 interface UserProfile {
   _id: string;
   name: string;
@@ -18,24 +19,22 @@ export default function CreateCoursePage() {
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Form State
   const [formData, setFormData] = useState({
     name: "",
-    lessonNumber: "",
-    teacher: "", // Backend "teacher" bekliyor (ID olarak)
-    students: [] as string[], // Backend "students" bekliyor (ID Array)
+    courseCode: "", // YENİ: Ders Kodu (Örn: BSM101)
+    lessonNumber: "", // YENİ: Ders Sayısı (Örn: 14)
+    teacher: "", // Backend teacher ID bekliyor
+    students: [] as string[],
     status: "Aktif",
   });
 
-  // Kullanıcıları Çek
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Backend'inde tüm kullanıcıları getiren bir route olmalı
         const res = await fetch("http://localhost:5000/api/users");
         if (res.ok) {
           const data: UserProfile[] = await res.json();
-
-          // Frontend'de filtreleme yapıyoruz
           setTeachers(data.filter((u) => u.role === "teacher"));
           setStudents(data.filter((u) => u.role === "student"));
         }
@@ -95,11 +94,15 @@ export default function CreateCoursePage() {
           <h2 className="text-2xl font-bold text-gray-800">
             Yeni Ders Oluştur
           </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Ders kodu ve ders sayısını eksiksiz giriniz.
+          </p>
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Üst Kısım: Ad, Kod ve Sayı */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="col-span-1 md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Ders Adı
               </label>
@@ -109,12 +112,27 @@ export default function CreateCoursePage() {
                 value={formData.name}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="Örn: Algoritma"
+                placeholder="Örn: Algoritma ve Programlama"
               />
             </div>
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Ders Kodu
+                Ders Kodu (Code)
+              </label>
+              <input
+                type="text"
+                name="courseCode"
+                value={formData.courseCode}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                placeholder="Örn: BSM101"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Ders Sayısı (Lesson Number)
               </label>
               <input
                 type="number"
@@ -122,11 +140,12 @@ export default function CreateCoursePage() {
                 value={formData.lessonNumber}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="Örn: 101"
+                placeholder="Örn: 14"
               />
             </div>
           </div>
 
+          {/* Öğretmen */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Öğretmen Ata
@@ -146,6 +165,7 @@ export default function CreateCoursePage() {
             </select>
           </div>
 
+          {/* Öğrenci Listesi */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-semibold text-gray-700">
@@ -194,6 +214,31 @@ export default function CreateCoursePage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Durum */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Durum
+            </label>
+            <div className="flex gap-4">
+              {["Aktif", "Pasif", "Tamamlandı"].map((status) => (
+                <label
+                  key={status}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="status"
+                    value={status}
+                    checked={formData.status === status}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-sm text-gray-700">{status}</span>
+                </label>
+              ))}
             </div>
           </div>
         </div>

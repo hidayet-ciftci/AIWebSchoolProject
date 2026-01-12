@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-// Tipler
 interface UserProfile {
   _id: string;
   name: string;
@@ -15,9 +14,10 @@ interface UserProfile {
 interface Course {
   _id: string;
   name: string;
+  courseCode: string; // YENİ
   teacher: UserProfile | null;
   students: UserProfile[];
-  lessonNumber: number;
+  lessonNumber: number; // YENİ
   status: string;
 }
 
@@ -25,7 +25,6 @@ export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Verileri Backend'den Çekme
   const fetchCourses = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/courses");
@@ -44,9 +43,7 @@ export default function AdminCoursesPage() {
     fetchCourses();
   }, []);
 
-  // Silme İşlemi
   const handleDelete = async (id: string) => {
-    // Onay Kutusu
     if (!window.confirm("Bu dersi silmek istediğinize emin misiniz?")) return;
 
     try {
@@ -59,7 +56,6 @@ export default function AdminCoursesPage() {
 
       if (res.ok) {
         alert("Ders başarıyla silindi");
-        // Listeyi güncelle (silineni state'den çıkar)
         setCourses((prev) => prev.filter((course) => course._id !== id));
       } else {
         alert("Silme işlemi başarısız oldu.");
@@ -80,9 +76,10 @@ export default function AdminCoursesPage() {
             Dersleri, öğretmenleri ve öğrencileri tek yerden yönetin.
           </p>
         </div>
+
         <Link
           href="/admin/courses/create"
-          className="px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+          className="px-6 py-3 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
         >
           <span className="text-xl leading-none">+</span> Yeni Ders Ekle
         </Link>
@@ -94,15 +91,16 @@ export default function AdminCoursesPage() {
             key={course._id}
             className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group"
           >
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-linear-to-b from-[#667eea] to-[#764ba2]"></div>
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#667eea] to-[#764ba2]"></div>
 
             <div className="flex justify-between items-start mb-4 pl-3">
               <div>
                 <h3 className="text-xl font-bold text-[#1a202c]">
                   {course.name}
                 </h3>
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Kod: {course.lessonNumber}
+                {/* Ders Kodu Gösterimi */}
+                <span className="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2 py-1 rounded-md mt-1 inline-block">
+                  {course.courseCode || "KOD YOK"}
                 </span>
               </div>
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
@@ -127,16 +125,29 @@ export default function AdminCoursesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
-                  {course.students?.length || 0}
+              <div className="flex items-center justify-between pr-2">
+                {/* Öğrenci Sayısı */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
+                    {course.students?.length || 0}
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium uppercase">
+                      Öğrenci
+                    </p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {course.students?.length} Kayıtlı
+                    </p>
+                  </div>
                 </div>
-                <div>
+
+                {/* Ders Sayısı Gösterimi */}
+                <div className="text-right">
                   <p className="text-xs text-gray-500 font-medium uppercase">
-                    Öğrenci Sayısı
+                    Ders Sayısı
                   </p>
-                  <p className="text-sm font-semibold text-gray-800">
-                    {course.students?.length} Öğrenci Kayıtlı
+                  <p className="text-sm font-bold text-gray-700">
+                    {course.lessonNumber}
                   </p>
                 </div>
               </div>

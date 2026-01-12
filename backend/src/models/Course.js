@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const courseSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  courseCode: { type: String, required: true },
   teacher: {
     type: mongoose.Schema.Types.ObjectId, // Veri tipini, MongoDB'nin kimlik türü olan ObjectId olarak ayarla
     ref: "Users", // Bu ObjectId'nin hangi modele ait olduğunu belirt (User.js'deki model adı "Users" idi)
