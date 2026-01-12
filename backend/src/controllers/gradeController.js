@@ -2,17 +2,14 @@ const Grade = require("../models/Grade");
 const Exam = require("../models/Exam");
 const Course = require("../models/Course");
 
-// 1. Sınavı Hesapla ve Not Olarak Kaydet (Sınav Bitince Çağrılır)
 const createGrade = async (req, res) => {
   try {
     const { examId, answers } = req.body;
     const studentId = req.user.id;
 
-    // Sınavı bul
     const exam = await Exam.findById(examId);
     if (!exam) return res.status(404).json({ message: "Sınav bulunamadı." });
 
-    // Puanlama Mantığı
     let totalScore = 0;
     let correctCount = 0;
     let wrongCount = 0;
@@ -22,7 +19,6 @@ const createGrade = async (req, res) => {
       const studentAnswer = answers[q._id] || "";
       const correctAnswer = q.correctAnswer || "";
 
-      // Büyük/küçük harf duyarlılığını kaldırarak kontrol et
       const isCorrect =
         studentAnswer.trim().toLowerCase() ===
         correctAnswer.trim().toLowerCase();
@@ -41,7 +37,6 @@ const createGrade = async (req, res) => {
       });
     });
 
-    // Veritabanına Kaydet
     const newGrade = new Grade({
       student: studentId,
       exam: examId,
@@ -69,12 +64,10 @@ const createGrade = async (req, res) => {
   }
 };
 
-// 2. Öğrencinin Kendi Notlarını Getir (Tüm sınavları göster, girilmemiş olanlar için null)
 const getMyGrades = async (req, res) => {
   try {
     const studentId = req.user.id;
 
-    // 1. Öğrencinin kayıtlı olduğu dersleri bul
     const enrolledCourses = await Course.find({ students: studentId }).select(
       "_id"
     );
@@ -84,7 +77,6 @@ const getMyGrades = async (req, res) => {
       return res.status(200).json([]);
     }
 
-    // 2. Bu derslere ait ve yayınlanmış tüm sınavları getir
     const allExams = await Exam.find({
       course: { $in: courseIds },
       isPublished: true,
@@ -93,7 +85,6 @@ const getMyGrades = async (req, res) => {
       .populate("teacher", "name surname")
       .sort({ date: 1 });
 
-    // 3. Öğrencinin mevcut notlarını getir
     const existingGrades = await Grade.find({ student: studentId })
       .populate("course", "name courseCode")
       .populate({
@@ -102,15 +93,12 @@ const getMyGrades = async (req, res) => {
         populate: { path: "teacher", select: "name surname" },
       });
 
-    // 4. Her sınav için notu kontrol et ve birleştir
     const gradesWithAllExams = allExams.map((exam) => {
-      // Bu sınav için not var mı?
       const grade = existingGrades.find(
         (g) => g.exam && g.exam._id.toString() === exam._id.toString()
       );
 
       if (grade && grade.exam && grade.course) {
-        // Not varsa, mevcut grade'i döndür
         return {
           _id: grade._id,
           score: grade.score,
@@ -128,10 +116,9 @@ const getMyGrades = async (req, res) => {
           },
         };
       } else {
-        // Not yoksa, sınav bilgisiyle birlikte null score döndür
         return {
           _id: null,
-          score: null, // Girilmemiş, "G" olarak gösterilecek
+          score: null,
           correctCount: 0,
           wrongCount: 0,
           submittedAt: null,
@@ -155,12 +142,10 @@ const getMyGrades = async (req, res) => {
   }
 };
 
-// 3. Öğretmen için: Derslerindeki öğrencilerin notlarını getir
 const getTeacherGrades = async (req, res) => {
   try {
     const teacherId = req.user.id;
 
-    // 1. Öğretmenin derslerini bul
     const teacherCourses = await Course.find({ teacher: teacherId }).select(
       "_id name courseCode"
     );
@@ -171,7 +156,6 @@ const getTeacherGrades = async (req, res) => {
 
     const courseIds = teacherCourses.map((course) => course._id);
 
-    // 2. Bu derslere ait tüm sınavları getir
     const exams = await Exam.find({
       course: { $in: courseIds },
       isPublished: true,
@@ -179,28 +163,23 @@ const getTeacherGrades = async (req, res) => {
       .populate("course", "name courseCode")
       .select("_id title examType date weight course");
 
-    // 3. Bu derslerdeki tüm öğrencileri bul
     const coursesWithStudents = await Course.find({
       _id: { $in: courseIds },
     }).populate("students", "name surname studentNo");
 
-    // 4. Her ders için öğrenci notlarını hesapla
     const coursesWithGrades = await Promise.all(
       teacherCourses.map(async (course) => {
         const courseObj = course.toObject();
 
-        // Bu derse ait öğrencileri bul
         const courseData = coursesWithStudents.find(
           (c) => c._id.toString() === course._id.toString()
         );
         const students = courseData?.students || [];
 
-        // Bu derse ait sınavları bul
         const courseExams = exams.filter(
           (exam) => exam.course._id.toString() === course._id.toString()
         );
 
-        // Her öğrenci için notları hesapla
         const studentsWithGrades = await Promise.all(
           students.map(async (student) => {
             const studentObj = {
@@ -213,7 +192,6 @@ const getTeacherGrades = async (req, res) => {
               totalWeight: 0,
             };
 
-            // Her sınav için notu bul
             for (const exam of courseExams) {
               const grade = await Grade.findOne({
                 exam: exam._id,
@@ -230,7 +208,6 @@ const getTeacherGrades = async (req, res) => {
               });
             }
 
-            // Ağırlıklı ortalamayı hesapla
             let weightedSum = 0;
             let totalWeight = 0;
             studentObj.exams.forEach((exam) => {
@@ -250,7 +227,6 @@ const getTeacherGrades = async (req, res) => {
 
         courseObj.students = studentsWithGrades;
 
-        // Ders ortalamalarını hesapla (sınav tipine göre)
         const examTypeAverages = {};
         let overallSum = 0;
         let overallCount = 0;

@@ -14,13 +14,11 @@ export default function StudentLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // Yetki kontrolü bitene kadar içeriği göstermemek için bir state
   const [isAuthorized, setIsAuthorized] = useState(false);
   const { profile } = useProfile();
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   useEffect(() => {
     const checkAuth = async () => {
-      // 1. Token var mı?
       const token = localStorage.getItem("token");
       const userStr = localStorage.getItem("user");
 
@@ -29,7 +27,6 @@ export default function StudentLayout({
         return;
       }
 
-      // 2. Rol kontrolü (Basit check)
       try {
         const user = JSON.parse(userStr);
         if (user.role !== "student") {
@@ -46,27 +43,23 @@ export default function StudentLayout({
         return;
       }
 
-      // 3. TOKEN DOĞRULAMA (Backend ile haberleşme)
       try {
         const res = await fetch(`${API_URL}/auth/dashboard`, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`, // Token'ı header'da gönderiyoruz
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        // Eğer sunucu 200 dönmezse (örn: 401 token süresi doldu)
         if (!res.ok) {
           throw new Error("Oturum süresi doldu");
         }
 
-        // Her şey yolunda, içeriği göster
         setIsAuthorized(true);
       } catch (error) {
         console.error("Auth check failed:", error);
         toast.error("Oturum süreniz doldu, lütfen tekrar giriş yapın.");
 
-        // Token geçersizse temizle ve at
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         router.push("/");
@@ -82,8 +75,6 @@ export default function StudentLayout({
     toast.success("Çıkış yapıldı");
     router.push("/");
   };
-
-  //NavLink , navbar'ın hangi sayfada olduğunu belirtmek için kullanılıyor
 
   const NavLink = ({
     href,
@@ -112,7 +103,6 @@ export default function StudentLayout({
     );
   };
 
-  // Eğer yetki kontrolü henüz bitmediyse loading gösterebilir veya boş dönebiliriz
   if (!isAuthorized) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#f7fafc]">

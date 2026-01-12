@@ -28,7 +28,7 @@ export default function AdminLayout({
         return;
       }
 
-      try {
+        try {
         const user = JSON.parse(userStr);
         if (user.role !== "admin") {
           toast.error("Bu alana sadece yöneticiler girebilir!");
@@ -36,7 +36,6 @@ export default function AdminLayout({
           return;
         }
 
-        // Backend Token Doğrulama
         const res = await fetch(`${API_URL}/auth/dashboard`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },

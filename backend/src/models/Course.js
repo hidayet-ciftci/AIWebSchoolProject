@@ -4,15 +4,14 @@ const courseSchema = new mongoose.Schema({
   name: { type: String, required: true },
   courseCode: { type: String, required: true },
   teacher: {
-    type: mongoose.Schema.Types.ObjectId, // Veri tipini, MongoDB'nin kimlik türü olan ObjectId olarak ayarla
-    ref: "Users", // Bu ObjectId'nin hangi modele ait olduğunu belirt (User.js'deki model adı "Users" idi)
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users",
     required: true,
   },
   students: [
     {
-      // Array kullanıyoruz, çünkü birden fazla öğrenci var.
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Users", // Öğrenci de bir User olduğu için yine "Users" modeline referans veriyoruz
+      ref: "Users",
     },
   ],
   lessonNumber: { type: Number, required: true },
@@ -20,12 +19,12 @@ const courseSchema = new mongoose.Schema({
   status: { type: String },
   materials: [
     {
-      title: { type: String }, // Dosya görünen adı
-      fileName: { type: String }, // Sunucudaki dosya adı
-      fileUrl: { type: String }, // Erişilebilir URL
+      title: { type: String },
+      fileName: { type: String },
+      fileUrl: { type: String },
       uploadedAt: { type: Date, default: Date.now },
     },
   ],
 });
 
-module.exports = mongoose.model("courses", courseSchema); //
+module.exports = mongoose.model("courses", courseSchema);

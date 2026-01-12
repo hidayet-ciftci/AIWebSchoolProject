@@ -5,18 +5,12 @@ import { useProfile } from "@/hooks/useProfile";
 
 export default function TeacherExamsPage() {
   const router = useRouter();
-
-  // --- DÜZELTME BURADA YAPILDI ---
-  // Hook'tan "profile" adıyla geliyor, biz bu sayfada "user" adıyla kullanmak istiyoruz.
-  // Böylece aşağıda yazdığımız user._id kodlarını değiştirmemize gerek kalmıyor.
-  // any kullanıyoruz çünkü TypeScript bazen null kontrolünde takılabiliyor.
   const { profile: user, loading }: any = useProfile();
 
   const [exams, setExams] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Form Verileri
   const [formData, setFormData] = useState({
     courseId: "",
     examType: "vize",
@@ -26,14 +20,11 @@ export default function TeacherExamsPage() {
     weight: 30,
   });
 
-  // 2. Verileri Çek
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // Sadece user (aslında profile) yüklendiyse istek at
     if (!loading && user?._id) {
-      // Dersleri Getir
       fetch(
         `${
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -46,7 +37,6 @@ export default function TeacherExamsPage() {
         })
         .catch((err) => console.error("Ders hatası:", err));
 
-      // Sınavları Getir
       fetch(
         `${
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -61,7 +51,6 @@ export default function TeacherExamsPage() {
     }
   }, [user, loading]);
 
-  // 3. Seçili ders için mevcut ağırlık toplamını hesapla
   const getCurrentTotalWeight = () => {
     if (!formData.courseId) return 0;
     return exams
@@ -72,12 +61,8 @@ export default function TeacherExamsPage() {
   const currentTotalWeight = getCurrentTotalWeight();
   const newTotalWeight = currentTotalWeight + formData.weight;
 
-  // 4. Sınav Oluşturma Fonksiyonu
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // HATA AYIKLAMA: Konsola kullanıcı bilgisini yazdır
-    console.log("Mevcut Kullanıcı (Profile):", user);
 
     if (!user?._id) {
       alert(
@@ -86,7 +71,6 @@ export default function TeacherExamsPage() {
       return;
     }
 
-    // Ağırlık kontrolü
     if (newTotalWeight > 100) {
       alert(
         `Bu ders için toplam ağırlık 100'ü geçemez!\nMevcut toplam: ${currentTotalWeight}%\nYeni ağırlık: ${formData.weight}%\nToplam: ${newTotalWeight}%`
@@ -117,7 +101,6 @@ export default function TeacherExamsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Başarılıysa detay sayfasına git
         router.push(`/teacher/exams/${data.exam._id}`);
       } else {
         console.error("Backend Hatası:", data);
@@ -148,7 +131,6 @@ export default function TeacherExamsPage() {
     }
   };
 
-  // 4. EĞER YÜKLENİYORSA BEKLET
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -159,7 +141,6 @@ export default function TeacherExamsPage() {
     );
   }
 
-  // 5. EĞER USER YOKSA
   if (!user) {
     return (
       <div className="p-10 text-center text-red-500 font-bold">

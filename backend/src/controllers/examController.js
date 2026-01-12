@@ -1,14 +1,9 @@
-// backend/src/controllers/examController.js
-
 const Exam = require("../models/Exam");
 const Course = require("../models/Course");
 const Grade = require("../models/Grade");
 
-// 1. Yeni Sınav Oluştur (Sadece iskelet)
-// 1. Yeni Sınav Oluştur
 const createExam = async (req, res) => {
   try {
-    // time parametresini de req.body'den alıyoruz
     const { courseId, examType, date, time, duration, weight, teacherId } =
       req.body;
 
@@ -17,7 +12,6 @@ const createExam = async (req, res) => {
       return res.status(404).json({ message: "Seçilen ders bulunamadı." });
     }
 
-    // Ağırlık kontrolü: Bu ders için mevcut sınavların toplam ağırlığını hesapla
     const existingExams = await Exam.find({
       course: courseId,
       teacher: teacherId,
@@ -28,19 +22,15 @@ const createExam = async (req, res) => {
       0
     );
 
-    // Yeni ağırlık eklendiğinde toplam 100'ü geçmemeli
     if (totalWeight + weight > 100) {
       return res.status(400).json({
-        message: `Bu ders için toplam ağırlık 100'ü geçemez. Mevcut toplam: ${totalWeight}%, Yeni ağırlık: ${weight}%. Toplam: ${totalWeight + weight}%`,
+        message: `Bu ders için toplam ağırlık 100'ü geçemez. Mevcut toplam: ${totalWeight}%, Yeni ağırlık: ${weight}%. Toplam: ${
+          totalWeight + weight
+        }%`,
       });
     }
 
-    // --- KRİTİK GÜNCELLEME BURASI ---
-    // Tarih ve Saati birleştirip tam bir zaman damgası oluşturuyoruz.
-    // Gelen date: "2025-02-20", time: "14:30" -> Date Objesi
     const fullDate = new Date(`${date}T${time}:00`);
-    // -------------------------------
-
     const formattedType = examType.charAt(0).toUpperCase() + examType.slice(1);
     const generatedTitle = `${course.name} ${formattedType} Sınavı`;
 
@@ -49,7 +39,7 @@ const createExam = async (req, res) => {
       course: courseId,
       teacher: teacherId,
       examType,
-      date: fullDate, // Artık saati de içeren tam tarih
+      date: fullDate,
       duration,
       weight,
       questions: [],
@@ -70,7 +60,6 @@ const createExam = async (req, res) => {
   }
 };
 
-// 2. Öğretmene ait sınavları getir
 const getExamsByTeacher = async (req, res) => {
   try {
     const { teacherId } = req.params;
@@ -86,7 +75,6 @@ const getExamsByTeacher = async (req, res) => {
   }
 };
 
-// 3. Tek bir sınavı detaylı getir
 const getExamById = async (req, res) => {
   try {
     const exam = await Exam.findById(req.params.id).populate("course");
@@ -99,7 +87,6 @@ const getExamById = async (req, res) => {
   }
 };
 
-// 4. Sınavı Güncelle
 const updateExam = async (req, res) => {
   try {
     const { id } = req.params;
@@ -117,7 +104,6 @@ const updateExam = async (req, res) => {
   }
 };
 
-// 5. Sınav Sil
 const deleteExam = async (req, res) => {
   try {
     const deletedExam = await Exam.findByIdAndDelete(req.params.id);
@@ -131,42 +117,34 @@ const deleteExam = async (req, res) => {
 
 const getMyExams = async (req, res) => {
   try {
-    // 1. Token'dan gelen kullanıcı ID'sini alıyoruz (verifyToken middleware'i bunu req.user içine koyar)
     const studentId = req.user.id;
 
-    // 2. Bu öğrencinin kayıtlı olduğu dersleri buluyoruz
-    // Course modelindeki 'students' dizisinde bu ID var mı diye bakıyoruz.
     const enrolledCourses = await Course.find({ students: studentId }).select(
       "_id"
     );
 
-    // Sadece ID'lerden oluşan bir liste yapıyoruz: ["dersId1", "dersId2"]
     const courseIds = enrolledCourses.map((course) => course._id);
 
-    // Eğer hiç dersi yoksa boş dizi dönüyoruz
     if (courseIds.length === 0) {
       return res.status(200).json([]);
     }
 
-    // 3. Bu derslere ait ve YAYINLANMIŞ (isPublished: true) sınavları getiriyoruz
     const exams = await Exam.find({
       course: { $in: courseIds },
       isPublished: true,
     })
-      .populate("course", "name courseCode") // Ders adını da getir
-      .populate("teacher", "name surname") // Hoca adını da getir
-      .sort({ date: 1 }); // Yaklaşan tarihe göre sırala
+      .populate("course", "name courseCode")
+      .populate("teacher", "name surname")
+      .sort({ date: 1 });
 
-    // 4. Her sınav için öğrencinin girip girmediğini kontrol et
     const examsWithStatus = await Promise.all(
       exams.map(async (exam) => {
         const examObj = exam.toObject();
-        // Bu öğrencinin bu sınava ait notu var mı?
         const grade = await Grade.findOne({
           exam: exam._id,
           student: studentId,
         });
-        examObj.isCompleted = !!grade; // Eğer not varsa sınav tamamlanmış demektir
+        examObj.isCompleted = !!grade;
         return examObj;
       })
     );
@@ -182,31 +160,26 @@ const getMyExams = async (req, res) => {
 const getExamForStudentToTake = async (req, res) => {
   try {
     const { id } = req.params;
-    const studentId = req.user.id; // verifyToken middleware'inden gelen ID
+    const studentId = req.user.id;
 
-    // --- YENİ KONTROL: Öğrenci daha önce bu sınava girmiş mi? ---
     const existingGrade = await Grade.findOne({
       exam: id,
       student: studentId,
     });
 
     if (existingGrade) {
-      // Eğer notu varsa, sınava tekrar girmesine izin verme
       return res.status(403).json({
         message: "Bu sınavı zaten tamamladınız.",
         isTaken: true,
       });
     }
-    // -------------------------------------------------------------
 
-    // 1. Sınavı bul
     const exam = await Exam.findById(id).populate("course", "name");
 
     if (!exam) {
       return res.status(404).json({ message: "Sınav bulunamadı." });
     }
 
-    // 2. Tarih ve Süre Kontrolü
     const now = new Date();
     const examStartDate = new Date(exam.date);
     const examEndDate = new Date(
@@ -223,7 +196,6 @@ const getExamForStudentToTake = async (req, res) => {
         .json({ message: "Sınav süresi doldu, giriş yapamazsınız." });
     }
 
-    // 3. Soruları Güvenli Hale Getir
     const examObj = exam.toObject();
     const safeQuestions = examObj.questions.map((q) => {
       const { correctAnswer, ...safeQuestion } = q;

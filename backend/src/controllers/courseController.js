@@ -15,8 +15,8 @@ const getCourses = async (req, res, next) => {
 const getCourseById = async (req, res, next) => {
   try {
     const course = await Course.findById(req.params.id)
-      .populate("teacher", "name surname email") // populate kullanmazsak sadece ID görürüz
-      .populate("students", "name surname studentNo"); // populate kullanırsak, ID yerine belirttiğimiz bilgileri görürüz
+      .populate("teacher", "name surname email")
+      .populate("students", "name surname studentNo");
     if (!course) return res.status(404).json({ message: "course not Found" });
     res.status(200).json(course);
   } catch (err) {
@@ -75,10 +75,8 @@ const deleteCourse = async (req, res, next) => {
   }
 };
 
-// ÖĞRETMEN İÇİN: Sadece kendi verdiği dersleri getir
 const getTeacherCourses = async (req, res, next) => {
   try {
-    // req.user.id token'dan gelmeli
     const teacherId = req.user.id;
     const courses = await Course.find({ teacher: teacherId }).populate(
       "students",
@@ -90,11 +88,9 @@ const getTeacherCourses = async (req, res, next) => {
   }
 };
 
-// ÖĞRENCİ İÇİN: Sadece kayıtlı olduğu dersleri getir
 const getStudentCourses = async (req, res, next) => {
   try {
     const studentId = req.user.id;
-    // students array'i içinde bu öğrencinin ID'si var mı diye bakar
     const courses = await Course.find({ students: studentId }).populate(
       "teacher",
       "name surname"
@@ -105,13 +101,11 @@ const getStudentCourses = async (req, res, next) => {
   }
 };
 
-// MATERYAL (NOT) YÜKLEME
 const uploadMaterial = async (req, res, next) => {
   try {
-    const { id } = req.params; // Course ID
+    const { id } = req.params;
     const { title } = req.body;
 
-    // Multer middleware'i kullanıldıysa dosya req.file içinde olur
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
@@ -119,7 +113,7 @@ const uploadMaterial = async (req, res, next) => {
     const newMaterial = {
       title: title || req.file.originalname,
       fileName: req.file.filename,
-      fileUrl: `/uploads/notes/${req.file.filename}`, // Dosya yolu (backend serve ayarına göre değişir)
+      fileUrl: `/uploads/notes/${req.file.filename}`,
       uploadedAt: Date.now(),
     };
 
@@ -137,19 +131,15 @@ const uploadMaterial = async (req, res, next) => {
   }
 };
 
-// MATERYAL SİLME
 const deleteMaterial = async (req, res, next) => {
   try {
-    const { id, materialId } = req.params; // Course ID ve Material ID
+    const { id, materialId } = req.params;
 
-    // Veritabanından materyali diziden çıkar
     const updatedCourse = await Course.findByIdAndUpdate(
       id,
       { $pull: { materials: { _id: materialId } } },
       { new: true }
     );
-
-    // İsteğe bağlı: fs.unlink ile dosyayı klasörden de fiziksel olarak silebilirsin.
 
     res
       .status(200)

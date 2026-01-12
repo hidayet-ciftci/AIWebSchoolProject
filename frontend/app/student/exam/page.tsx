@@ -14,13 +14,11 @@ export default function ExamPage() {
       try {
         const token = localStorage.getItem("token");
 
-        // Token yoksa login'e at
         if (!token) {
           router.push("/login");
           return;
         }
 
-        // Backend'e istek at (ID göndermiyoruz, sadece Token)
         const res = await fetch(
           `http://localhost:5000/api/exams/student/my-exams`,
           {
@@ -46,7 +44,6 @@ export default function ExamPage() {
     fetchExams();
   }, [router]);
 
-  // Yardımcı Fonksiyon: Tarih Formatlama
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("tr-TR", {
       day: "numeric",
@@ -57,7 +54,6 @@ export default function ExamPage() {
     });
   };
 
-  // Yardımcı Fonksiyon: Sınav Durumu Hesaplama
   const getStatus = (examDate: string, duration: number) => {
     const now = new Date();
     const start = new Date(examDate);
@@ -98,7 +94,6 @@ export default function ExamPage() {
           {/* Sınav Listesi */}
           {exams.map((exam) => {
             const status = getStatus(exam.date, exam.duration);
-            // exam.course populate edildiği için obje gelir
             const courseName = (exam.course as any)?.name || "Ders Bilgisi Yok";
 
             return (

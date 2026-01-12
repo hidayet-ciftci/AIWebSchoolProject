@@ -56,7 +56,6 @@ export default function TeacherGradesPage() {
         if (res.ok) {
           const data = await res.json();
           setCourses(data);
-          // İlk dersi varsayılan olarak seç
           if (data.length > 0 && !selectedCourse) {
             setSelectedCourse(data[0]._id);
           }
@@ -84,7 +83,6 @@ export default function TeacherGradesPage() {
 
   const selectedCourseData = courses.find((c) => c._id === selectedCourse);
 
-  // Seçili ders için sınav tiplerini bul
   const getExamTypes = () => {
     if (!selectedCourseData) return [];
     const examTypes = new Set<string>();
@@ -201,13 +199,11 @@ export default function TeacherGradesPage() {
                               )}
                             </td>
                             {examTypes.map((type) => {
-                              // Bu sınav tipi için öğrencinin notlarını bul
                               const examScores = student.exams
                                 .filter((exam) => exam.examType === type)
                                 .map((exam) => exam.score)
                                 .filter((score): score is number => score !== null);
 
-                              // Eğer birden fazla aynı tipte sınav varsa, hepsini göster
                               const examsOfType = student.exams.filter(
                                 (exam) => exam.examType === type
                               );

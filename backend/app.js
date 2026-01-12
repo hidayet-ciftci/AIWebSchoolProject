@@ -14,13 +14,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// connection of the mongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("connected"))
   .catch((error) => console.log("error: ", error));
 
-//routes and Middlewares
 const apiRouter = require("./src/routes/getUser");
 const authRouter = require("./src/routes/authRoutes");
 const courseRouter = require("./src/routes/getCourses");

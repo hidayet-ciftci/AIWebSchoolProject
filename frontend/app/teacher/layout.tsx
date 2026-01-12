@@ -15,13 +15,11 @@ export default function TeacherLayout({
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  // Yetki ve Kullanıcı İsmi State'leri
   const [isAuthorized, setIsAuthorized] = useState(false);
   const { profile } = useProfile();
 
   useEffect(() => {
     const checkAuth = async () => {
-      // 1. LocalStorage Kontrolü
       const token = localStorage.getItem("token");
       const userStr = localStorage.getItem("user");
 
@@ -30,7 +28,6 @@ export default function TeacherLayout({
         return;
       }
 
-      // 2. Rol Kontrolü (Teacher mı?)
       try {
         const user = JSON.parse(userStr);
         if (user.role !== "teacher") {
@@ -46,7 +43,6 @@ export default function TeacherLayout({
         return;
       }
 
-      // 3. BACKEND TOKEN DOĞRULAMA
       try {
         const res = await fetch(`${API_URL}/auth/dashboard`, {
           method: "GET",
@@ -59,15 +55,14 @@ export default function TeacherLayout({
           throw new Error("Token geçersiz veya süresi dolmuş");
         }
 
-        // Backend de onayladıysa içeri al
         setIsAuthorized(true);
       } catch (error) {
         console.error("Auth failed:", error);
         toast.error("Oturum süreniz doldu.");
 
         localStorage.removeItem("token");
-        localStorage.removeItem("user"); // Temizlik
-        router.push("/"); // Giriş ekranına şutla
+        localStorage.removeItem("user");
+        router.push("/");
       }
     };
 
@@ -108,7 +103,6 @@ export default function TeacherLayout({
     );
   };
 
-  // Yükleniyor ekranı
   if (!isAuthorized) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#f7fafc]">
@@ -141,7 +135,6 @@ export default function TeacherLayout({
           <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
             {profile?.name?.charAt(0).toUpperCase() || "Ö"}
           </div>
-          {/* Dinamik İsim Gösterimi */}
           <h2 className="font-semibold text-lg">
             {profile?.name || "Öğretmen"}
           </h2>

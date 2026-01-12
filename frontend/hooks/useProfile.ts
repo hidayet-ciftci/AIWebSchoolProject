@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { UserProfile } from "@/types"; // 1. Tipi buradan çektik
+import { UserProfile } from "@/types";
 
 export function useProfile() {
-  const [profile, setProfile] = useState<UserProfile | null>(null); // Tip güvenliği sağlandı
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 2. API URL'ini env dosyasından alıyoruz
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
@@ -18,7 +17,6 @@ export function useProfile() {
       }
 
       try {
-        // Hardcoded URL yerine değişken kullanımı:
         const response = await fetch(`${API_URL}/api/users/profile`, {
           method: "GET",
           headers: {
@@ -40,7 +38,7 @@ export function useProfile() {
     };
 
     fetchProfile();
-  }, [API_URL]); // API_URL değişirse (teorik olarak) tekrar çalışsın
+  }, [API_URL]);
 
   return { profile, loading };
 }

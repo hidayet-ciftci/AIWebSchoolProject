@@ -28,7 +28,6 @@ export default function AdminDashboard() {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        // Paralel olarak tüm verileri çek
         const [usersRes, coursesRes] = await Promise.all([
           fetch("http://localhost:5000/api/users", {
             headers: { Authorization: `Bearer ${token}` },
@@ -57,14 +56,12 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  // İstatistikler
   const totalStudents = users.filter((u) => u.role === "student").length;
   const totalTeachers = users.filter((u) => u.role === "teacher").length;
   const activeCourses = courses.filter(
     (c) => !c.status || c.status === "Aktif"
   ).length;
 
-  // Son kayıtlar (en yeni 5 kullanıcı)
   const recentUsers = [...users]
     .sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -73,7 +70,6 @@ export default function AdminDashboard() {
     })
     .slice(0, 5);
 
-  // Rol etiketleri
   const getRoleLabel = (role: string) => {
     const labels: { [key: string]: string } = {
       student: "Öğrenci",
@@ -83,7 +79,6 @@ export default function AdminDashboard() {
     return labels[role] || role;
   };
 
-  // Rol renkleri
   const getRoleColor = (role: string) => {
     if (role === "teacher") {
       return "bg-purple-100 text-purple-700";

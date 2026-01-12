@@ -1,5 +1,3 @@
-// frontend/types/index.ts
-
 export interface UserProfile {
   name: string;
   surname: string;
@@ -32,5 +30,5 @@ export interface Exam {
   weight: number;
   questions: Question[];
   isPublished: boolean;
-  isCompleted?: boolean; // Öğrencinin bu sınavı tamamlayıp tamamlamadığı
+  isCompleted?: boolean;
 }

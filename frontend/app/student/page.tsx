@@ -62,7 +62,6 @@ export default function StudentDashboardHome() {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        // Paralel olarak tüm verileri çek
         const [coursesRes, examsRes, gradesRes] = await Promise.all([
           fetch("http://localhost:5000/api/courses/student/my-courses", {
             headers: { Authorization: `Bearer ${token}` },
@@ -99,7 +98,6 @@ export default function StudentDashboardHome() {
     fetchData();
   }, []);
 
-  // Yaklaşan sınavları filtrele (gelecek tarihli ve tamamlanmamış)
   const now = new Date();
   const upcomingExams = exams
     .filter((exam) => {
@@ -107,12 +105,10 @@ export default function StudentDashboardHome() {
       return examDate > now && !exam.isCompleted;
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 3); // En yakın 3 sınav
+    .slice(0, 3);
 
-  // Tamamlanan sınav sayısı
   const completedExamsCount = exams.filter((exam) => exam.isCompleted).length;
 
-  // Son notlar (girilmiş olanlar, en son 3 tanesi)
   const recentGrades = grades
     .filter((grade) => grade.score !== null && grade.exam)
     .sort((a, b) => {
@@ -122,7 +118,6 @@ export default function StudentDashboardHome() {
     })
     .slice(0, 3);
 
-  // Genel ortalama hesapla (tüm derslerin ağırlıklı ortalamasının ortalaması)
   const calculateOverallAverage = () => {
     const courseAverages: { [key: string]: { sum: number; totalWeight: number } } = {};
 
@@ -151,7 +146,6 @@ export default function StudentDashboardHome() {
 
   const overallAverage = calculateOverallAverage();
 
-  // Tarih formatlama
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("tr-TR", {
@@ -161,7 +155,6 @@ export default function StudentDashboardHome() {
     });
   };
 
-  // Kalan gün hesaplama
   const getDaysRemaining = (dateString: string) => {
     const examDate = new Date(dateString);
     const diffTime = examDate.getTime() - now.getTime();
@@ -169,7 +162,6 @@ export default function StudentDashboardHome() {
     return diffDays;
   };
 
-  // Sınav tipi renkleri
   const getExamTypeColor = (examType: string) => {
     const colors: { [key: string]: { bg: string; border: string; text: string } } = {
       vize: { bg: "bg-[#fef5e7]", border: "border-[#f59e0b]", text: "text-[#d97706]" },
@@ -179,7 +171,6 @@ export default function StudentDashboardHome() {
     return colors[examType] || colors.quiz;
   };
 
-  // Not renkleri
   const getGradeColor = (score: number) => {
     if (score >= 90) return { bg: "bg-[#f0fff4]", text: "text-[#38a169]" };
     if (score >= 80) return { bg: "bg-[#fef5e7]", text: "text-[#d97706]" };

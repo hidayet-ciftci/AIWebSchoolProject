@@ -1,11 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const authController = require("../controllers/authController"); // Controller'ı çağır
+const authController = require("../controllers/authController");
 const checkRole = require("../middlewares/checkRole");
 const verifyToken = require("../middlewares/verifyToken");
-const upload = require("../middlewares/upload"); // Multer'ı çağır
+const upload = require("../middlewares/upload");
 
-// Sadece yolu gösterir, işi yapmaz
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 

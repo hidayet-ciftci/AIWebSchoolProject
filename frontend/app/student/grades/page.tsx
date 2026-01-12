@@ -70,7 +70,6 @@ export default function GradesPage() {
         if (res.ok) {
           const data = await res.json();
           setGrades(data);
-          // Derslere göre grupla
           groupGradesByCourse(data);
         } else {
           console.error("Notlar çekilemedi");
@@ -89,7 +88,6 @@ export default function GradesPage() {
     const courseMap = new Map<string, CourseGrades>();
 
     gradesData.forEach((grade) => {
-      // Exam veya course null ise atla
       if (!grade.exam || !grade.course) {
         console.warn("Grade'de exam veya course bilgisi eksik:", grade);
         return;
@@ -111,7 +109,6 @@ export default function GradesPage() {
       }
 
       const courseData = courseMap.get(courseId)!;
-      // Score null ise girilmemiş, 0 olarak al ve "G" göster
       const examScore = grade.score !== null ? grade.score : 0;
       courseData.exams.push({
         examTitle: grade.exam.title,
@@ -124,7 +121,6 @@ export default function GradesPage() {
       courseData.totalWeight += grade.exam.weight;
     });
 
-    // Ağırlıklı ortalamayı hesapla
     const grouped: CourseGrades[] = Array.from(courseMap.values()).map(
       (course) => {
         let weightedSum = 0;

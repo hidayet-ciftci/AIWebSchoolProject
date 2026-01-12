@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 
-// --- TİP TANIMLAMALARI ---
 interface Question {
   _id: string;
   questionText: string;
@@ -17,10 +16,9 @@ interface ExamData {
   title: string;
   course: { name: string };
   questions: Question[];
-  remainingTime: number; // Backend'den ms cinsinden gelecek
+  remainingTime: number;
 }
 
-// Yeni: Sonuç verisi tipi
 interface ExamResultData {
   score: number;
   correctCount: number;
@@ -35,15 +33,9 @@ export default function TakeExamPage() {
   const [exam, setExam] = useState<ExamData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // Sonuç State'i (Sınav bitince dolar)
   const [examResult, setExamResult] = useState<ExamResultData | null>(null);
-
-  // Geri sayım
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cevaplar
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -94,7 +86,7 @@ export default function TakeExamPage() {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            handleFinishExam(true); // Süre bitti, otomatik bitir
+            handleFinishExam(true);
             return 0;
           }
           return prev - 1;
@@ -120,7 +112,6 @@ export default function TakeExamPage() {
     }));
   };
 
-  // --- SINAVI BİTİRME VE PUANLAMA ---
   const handleFinishExam = async (isAuto: boolean = false) => {
     if (!isAuto) {
       const confirmFinish = confirm(
@@ -129,13 +120,11 @@ export default function TakeExamPage() {
       if (!confirmFinish) return;
     }
 
-    // Sayacı durdur
     if (timerRef.current) clearInterval(timerRef.current);
 
     const token = localStorage.getItem("token");
 
     try {
-      // YENİ ENDPOINT: grades/create
       const res = await fetch(`http://localhost:5000/api/grades/create`, {
         method: "POST",
         headers: {
@@ -151,7 +140,6 @@ export default function TakeExamPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Backend'den gelen sonucu ekrana basmak için state'e at
         setExamResult({
           score: data.score,
           correctCount: data.correctCount,
@@ -182,7 +170,6 @@ export default function TakeExamPage() {
       </div>
     );
 
-  // --- SONUÇ EKRANI (Varsa bunu göster) ---
   if (examResult) {
     return (
       <div className="max-w-3xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-xl text-center animate-fadeIn">
@@ -235,7 +222,6 @@ export default function TakeExamPage() {
     );
   }
 
-  // --- SINAV EKRANI ---
   return (
     <div className="max-w-4xl mx-auto pb-20">
       {/* Üst Bilgi Çubuğu (Sticky) */}

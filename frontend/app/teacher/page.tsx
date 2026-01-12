@@ -58,7 +58,6 @@ export default function TeacherDashboardHome() {
 
         if (!profile?._id) return;
 
-        // Paralel olarak tüm verileri çek
         const [coursesRes, examsRes, gradesRes] = await Promise.all([
           fetch(
             `http://localhost:5000/api/courses/teacher/my-courses`,
@@ -106,13 +105,11 @@ export default function TeacherDashboardHome() {
     }
   }, [profile, profileLoading]);
 
-  // Toplam öğrenci sayısı
   const totalStudents = courses.reduce(
     (sum, course) => sum + (course.students?.length || 0),
     0
   );
 
-  // Yaklaşan sınavlar (gelecek tarihli ve yayınlanmış)
   const now = new Date();
   const upcomingExams = exams
     .filter((exam) => {
@@ -122,7 +119,6 @@ export default function TeacherDashboardHome() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 3);
 
-  // Bekleyen sınavlar (yayınlanmamış)
   const pendingExams = exams.filter((exam) => !exam.isPublished);
 
 
@@ -144,7 +140,6 @@ export default function TeacherDashboardHome() {
     return diffDays;
   };
 
-  // Sınav tipi renkleri
   const getExamTypeColor = (examType: string) => {
     const colors: { [key: string]: { bg: string; border: string; text: string } } = {
       vize: { bg: "bg-[#fef5e7]", border: "border-[#f59e0b]", text: "text-[#d97706]" },
@@ -154,7 +149,6 @@ export default function TeacherDashboardHome() {
     return colors[examType] || colors.quiz;
   };
 
-  // Sınav için öğrenci sayısı (ders öğrenci sayısı)
   const getStudentCountForExam = (exam: Exam) => {
     const course = courses.find((c) => c._id === exam.course._id);
     return course?.students?.length || 0;

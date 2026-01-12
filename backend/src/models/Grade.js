@@ -13,10 +13,10 @@ const gradeSchema = new mongoose.Schema({
   },
   course: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "courses", // Course modelindeki isimlendirmene dikkat et
+    ref: "courses",
     required: true,
   },
-  score: { type: Number, required: true }, // Alınan Puan
+  score: { type: Number, required: true },
   correctCount: { type: Number, default: 0 },
   wrongCount: { type: Number, default: 0 },
   answers: [

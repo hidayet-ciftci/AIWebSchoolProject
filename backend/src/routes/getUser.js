@@ -5,7 +5,6 @@ const verifyToken = require("../middlewares/verifyToken");
 
 router.get("/", async (req, res, next) => {
   try {
-    // Tüm kullanıcıları bul ama şifrelerini getirme
     const users = await User.find().select("-password");
     res.json(users);
   } catch (error) {
