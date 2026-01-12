@@ -9,4 +9,7 @@ router.post("/create", verifyToken, gradeController.createGrade);
 // Öğrenci notlarım sayfası için
 router.get("/student/my-grades", verifyToken, gradeController.getMyGrades);
 
+// Öğretmen notlar sayfası için
+router.get("/teacher/my-grades", verifyToken, gradeController.getTeacherGrades);
+
 module.exports = router;

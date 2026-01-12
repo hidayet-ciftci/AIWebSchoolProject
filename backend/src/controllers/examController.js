@@ -17,6 +17,24 @@ const createExam = async (req, res) => {
       return res.status(404).json({ message: "Seçilen ders bulunamadı." });
     }
 
+    // Ağırlık kontrolü: Bu ders için mevcut sınavların toplam ağırlığını hesapla
+    const existingExams = await Exam.find({
+      course: courseId,
+      teacher: teacherId,
+    });
+
+    const totalWeight = existingExams.reduce(
+      (sum, exam) => sum + (exam.weight || 0),
+      0
+    );
+
+    // Yeni ağırlık eklendiğinde toplam 100'ü geçmemeli
+    if (totalWeight + weight > 100) {
+      return res.status(400).json({
+        message: `Bu ders için toplam ağırlık 100'ü geçemez. Mevcut toplam: ${totalWeight}%, Yeni ağırlık: ${weight}%. Toplam: ${totalWeight + weight}%`,
+      });
+    }
+
     // --- KRİTİK GÜNCELLEME BURASI ---
     // Tarih ve Saati birleştirip tam bir zaman damgası oluşturuyoruz.
     // Gelen date: "2025-02-20", time: "14:30" -> Date Objesi
@@ -139,7 +157,21 @@ const getMyExams = async (req, res) => {
       .populate("teacher", "name surname") // Hoca adını da getir
       .sort({ date: 1 }); // Yaklaşan tarihe göre sırala
 
-    res.status(200).json(exams);
+    // 4. Her sınav için öğrencinin girip girmediğini kontrol et
+    const examsWithStatus = await Promise.all(
+      exams.map(async (exam) => {
+        const examObj = exam.toObject();
+        // Bu öğrencinin bu sınava ait notu var mı?
+        const grade = await Grade.findOne({
+          exam: exam._id,
+          student: studentId,
+        });
+        examObj.isCompleted = !!grade; // Eğer not varsa sınav tamamlanmış demektir
+        return examObj;
+      })
+    );
+
+    res.status(200).json(examsWithStatus);
   } catch (error) {
     console.error("Öğrenci sınavları hatası:", error);
     res

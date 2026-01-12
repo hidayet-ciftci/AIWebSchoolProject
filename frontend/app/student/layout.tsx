@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function StudentLayout({
   children,
@@ -15,6 +16,7 @@ export default function StudentLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Yetki kontrolü bitene kadar içeriği göstermemek için bir state
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const { profile } = useProfile();
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   useEffect(() => {
     const checkAuth = async () => {
@@ -143,7 +145,9 @@ export default function StudentLayout({
           <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-4xl shadow-lg">
             👨‍🎓
           </div>
-          <h2 className="font-semibold text-lg">ahmet</h2>
+          <h2 className="font-semibold text-lg">
+            {profile?.name || "Öğrenci"}
+          </h2>
           <p className="text-gray-400 text-sm">Öğrenci</p>
         </div>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function TeacherLayout({
   children,
@@ -16,6 +17,7 @@ export default function TeacherLayout({
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   // Yetki ve Kullanıcı İsmi State'leri
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const { profile } = useProfile();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -141,7 +143,9 @@ export default function TeacherLayout({
             👨‍🏫
           </div>
           {/* Dinamik İsim Gösterimi */}
-          <h2 className="font-semibold text-lg">ahmet</h2>
+          <h2 className="font-semibold text-lg">
+            {profile?.name || "Öğretmen"}
+          </h2>
           <p className="text-gray-400 text-sm">Öğretmen</p>
         </div>
 

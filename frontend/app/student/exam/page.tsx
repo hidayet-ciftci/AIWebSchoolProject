@@ -131,10 +131,14 @@ export default function ExamPage() {
 
                 {/* Buton Alanı */}
                 <div className="text-right">
-                  {status.label === "Aktif" ? (
+                  {exam.isCompleted ? (
+                    <span className="text-sm text-green-600 font-semibold">
+                      Tamamlandı
+                    </span>
+                  ) : status.label === "Aktif" ? (
                     <button
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm transition shadow-sm"
-                      onClick={() => router.push(`/student/exam/${exam._id}`)} // YENİ: ID ile sayfaya git
+                      onClick={() => router.push(`/student/exam/${exam._id}`)}
                     >
                       Sınava Gir
                     </button>

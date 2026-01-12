@@ -61,7 +61,18 @@ export default function TeacherExamsPage() {
     }
   }, [user, loading]);
 
-  // 3. Sınav Oluşturma Fonksiyonu
+  // 3. Seçili ders için mevcut ağırlık toplamını hesapla
+  const getCurrentTotalWeight = () => {
+    if (!formData.courseId) return 0;
+    return exams
+      .filter((exam) => exam.course?._id === formData.courseId)
+      .reduce((sum, exam) => sum + (exam.weight || 0), 0);
+  };
+
+  const currentTotalWeight = getCurrentTotalWeight();
+  const newTotalWeight = currentTotalWeight + formData.weight;
+
+  // 4. Sınav Oluşturma Fonksiyonu
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -71,6 +82,14 @@ export default function TeacherExamsPage() {
     if (!user?._id) {
       alert(
         "Kullanıcı bilgisi yüklenemedi. Lütfen sayfayı yenileyin veya tekrar giriş yapın."
+      );
+      return;
+    }
+
+    // Ağırlık kontrolü
+    if (newTotalWeight > 100) {
+      alert(
+        `Bu ders için toplam ağırlık 100'ü geçemez!\nMevcut toplam: ${currentTotalWeight}%\nYeni ağırlık: ${formData.weight}%\nToplam: ${newTotalWeight}%`
       );
       return;
     }
@@ -309,6 +328,8 @@ export default function TeacherExamsPage() {
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    max="100"
                     className="w-full border rounded-lg p-2.5 bg-white"
                     value={formData.weight}
                     onChange={(e) =>
@@ -318,6 +339,22 @@ export default function TeacherExamsPage() {
                       })
                     }
                   />
+                  {formData.courseId && (
+                    <div className="mt-2 text-xs">
+                      <span className="text-gray-600">
+                        Mevcut toplam: {currentTotalWeight}%
+                      </span>
+                      {newTotalWeight > 100 ? (
+                        <span className="text-red-600 font-semibold ml-2">
+                          ⚠ Yeni toplam: {newTotalWeight}% (100'ü geçiyor!)
+                        </span>
+                      ) : (
+                        <span className="text-green-600 font-semibold ml-2">
+                          ✓ Yeni toplam: {newTotalWeight}%
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -1,67 +1,261 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useProfile } from "@/hooks/useProfile";
+
+interface Course {
+  _id: string;
+  name: string;
+  courseCode: string;
+  teacher: {
+    name: string;
+    surname: string;
+  };
+}
+
+interface Exam {
+  _id: string;
+  title: string;
+  course: {
+    _id: string;
+    name: string;
+    courseCode: string;
+  };
+  teacher: {
+    name: string;
+    surname: string;
+  };
+  examType: string;
+  date: string;
+  duration: number;
+  isCompleted?: boolean;
+}
+
+interface Grade {
+  _id: string | null;
+  score: number | null;
+  course: {
+    _id: string;
+    name: string;
+    courseCode: string;
+  };
+  exam: {
+    _id: string;
+    title: string;
+    examType: string;
+    date: string;
+  } | null;
+  submittedAt: string | null;
+}
 
 export default function StudentDashboardHome() {
+  const { profile, loading: profileLoading } = useProfile();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // Paralel olarak tüm verileri çek
+        const [coursesRes, examsRes, gradesRes] = await Promise.all([
+          fetch("http://localhost:5000/api/courses/student/my-courses", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://localhost:5000/api/exams/student/my-exams", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://localhost:5000/api/grades/student/my-grades", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        if (coursesRes.ok) {
+          const coursesData = await coursesRes.json();
+          setCourses(coursesData);
+        }
+
+        if (examsRes.ok) {
+          const examsData = await examsRes.json();
+          setExams(examsData);
+        }
+
+        if (gradesRes.ok) {
+          const gradesData = await gradesRes.json();
+          setGrades(gradesData);
+        }
+      } catch (error) {
+        console.error("Veri çekme hatası:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Yaklaşan sınavları filtrele (gelecek tarihli ve tamamlanmamış)
+  const now = new Date();
+  const upcomingExams = exams
+    .filter((exam) => {
+      const examDate = new Date(exam.date);
+      return examDate > now && !exam.isCompleted;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 3); // En yakın 3 sınav
+
+  // Tamamlanan sınav sayısı
+  const completedExamsCount = exams.filter((exam) => exam.isCompleted).length;
+
+  // Son notlar (girilmiş olanlar, en son 3 tanesi)
+  const recentGrades = grades
+    .filter((grade) => grade.score !== null && grade.exam)
+    .sort((a, b) => {
+      const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+      const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+      return dateB - dateA;
+    })
+    .slice(0, 3);
+
+  // Genel ortalama hesapla (tüm derslerin ağırlıklı ortalamasının ortalaması)
+  const calculateOverallAverage = () => {
+    const courseAverages: { [key: string]: { sum: number; totalWeight: number } } = {};
+
+    grades.forEach((grade) => {
+      if (!grade.exam || grade.score === null) return;
+
+      const courseId = grade.course._id;
+      if (!courseAverages[courseId]) {
+        courseAverages[courseId] = { sum: 0, totalWeight: 0 };
+      }
+
+      courseAverages[courseId].sum += grade.score * grade.exam.weight;
+      courseAverages[courseId].totalWeight += grade.exam.weight;
+    });
+
+    const averages = Object.values(courseAverages)
+      .map((course) => {
+        if (course.totalWeight === 0) return null;
+        return course.sum / course.totalWeight;
+      })
+      .filter((avg): avg is number => avg !== null);
+
+    if (averages.length === 0) return null;
+    return averages.reduce((sum, avg) => sum + avg, 0) / averages.length;
+  };
+
+  const overallAverage = calculateOverallAverage();
+
+  // Tarih formatlama
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  // Kalan gün hesaplama
+  const getDaysRemaining = (dateString: string) => {
+    const examDate = new Date(dateString);
+    const diffTime = examDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Sınav tipi renkleri
+  const getExamTypeColor = (examType: string) => {
+    const colors: { [key: string]: { bg: string; border: string; text: string } } = {
+      vize: { bg: "bg-[#fef5e7]", border: "border-[#f59e0b]", text: "text-[#d97706]" },
+      quiz: { bg: "bg-[#e0e7ff]", border: "border-[#667eea]", text: "text-[#667eea]" },
+      final: { bg: "bg-[#fce7f3]", border: "border-[#ec4899]", text: "text-[#ec4899]" },
+    };
+    return colors[examType] || colors.quiz;
+  };
+
+  // Not renkleri
+  const getGradeColor = (score: number) => {
+    if (score >= 90) return { bg: "bg-[#f0fff4]", text: "text-[#38a169]" };
+    if (score >= 80) return { bg: "bg-[#fef5e7]", text: "text-[#d97706]" };
+    if (score >= 70) return { bg: "bg-[#e6fffa]", text: "text-[#319795]" };
+    return { bg: "bg-[#fed7d7]", text: "text-[#e53e3e]" };
+  };
+
+  if (loading || profileLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-xl font-semibold text-gray-600">Yükleniyor...</div>
+      </div>
+    );
+  }
+
+  const studentName = profile?.name || "Öğrenci";
+
   return (
     <div className="animate-fadeIn space-y-8">
       {/* Welcome Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#1a202c] mb-2">
-            Hoş Geldiniz, Ahmet! 👋
+            Hoş Geldiniz, {studentName}! 👋
           </h1>
           <p className="text-[#718096]">
-            Bugün 3 dersiniz ve 2 yaklaşan sınavınız var
+            {courses.length > 0
+              ? `${courses.length} dersiniz ve ${upcomingExams.length} yaklaşan sınavınız var`
+              : "Henüz ders kaydınız bulunmamaktadır"}
           </p>
         </div>
-        <div className="bg-white p-4 px-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm text-[#718096] mb-1">Genel Ortalama</p>
-          <p className="text-3xl font-bold text-[#667eea]">88.3</p>
-        </div>
+        {overallAverage !== null && (
+          <div className="bg-white p-4 px-6 rounded-xl shadow-sm border border-gray-100">
+            <p className="text-sm text-[#718096] mb-1">Genel Ortalama</p>
+            <p className="text-3xl font-bold text-[#667eea]">
+              {overallAverage.toFixed(1)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        {[
-          {
-            icon: "📚",
-            label: "Aktif Dersler",
-            value: "3",
-            bg: "from-[#667eea] to-[#764ba2]",
-          },
-          {
-            icon: "✅",
-            label: "Tamamlanan Ödevler",
-            value: "12",
-            bg: "from-[#48bb78] to-[#38a169]",
-          },
-          {
-            icon: "⏰",
-            label: "Yaklaşan Sınavlar",
-            value: "2",
-            bg: "from-[#f6ad55] to-[#ed8936]",
-          },
-          {
-            icon: "📊",
-            label: "Devamsızlık",
-            value: "2%",
-            bg: "from-[#fc8181] to-[#f56565]",
-          },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300"
-          >
-            <div
-              className={`w-12 h-12 bg-linear-to-br ${stat.bg} rounded-xl flex items-center justify-center text-2xl text-white mb-3`}
-            >
-              {stat.icon}
-            </div>
-            <p className="text-sm text-[#718096] mb-1">{stat.label}</p>
-            <p className="text-2xl font-bold text-[#1a202c]">{stat.value}</p>
+        <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+            📚
           </div>
-        ))}
+          <p className="text-sm text-[#718096] mb-1">Aktif Dersler</p>
+          <p className="text-2xl font-bold text-[#1a202c]">{courses.length}</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#48bb78] to-[#38a169] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+            ✅
+          </div>
+          <p className="text-sm text-[#718096] mb-1">Tamamlanan Sınavlar</p>
+          <p className="text-2xl font-bold text-[#1a202c]">{completedExamsCount}</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#f6ad55] to-[#ed8936] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+            ⏰
+          </div>
+          <p className="text-sm text-[#718096] mb-1">Yaklaşan Sınavlar</p>
+          <p className="text-2xl font-bold text-[#1a202c]">{upcomingExams.length}</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#fc8181] to-[#f56565] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
+            📊
+          </div>
+          <p className="text-sm text-[#718096] mb-1">Toplam Not</p>
+          <p className="text-2xl font-bold text-[#1a202c]">
+            {grades.filter((g) => g.score !== null).length}
+          </p>
+        </div>
       </div>
 
       {/* Split Section: Exams & Grades */}
@@ -69,9 +263,7 @@ export default function StudentDashboardHome() {
         {/* Upcoming Exams (2 Columns) */}
         <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-[#1a202c]">
-              Yaklaşan Sınavlar
-            </h2>
+            <h2 className="text-xl font-bold text-[#1a202c]">Yaklaşan Sınavlar</h2>
             <Link
               href="/student/exam"
               className="text-[#667eea] font-semibold text-sm hover:underline"
@@ -79,46 +271,48 @@ export default function StudentDashboardHome() {
               Tümünü Gör →
             </Link>
           </div>
-          <div className="space-y-4">
-            <div className="p-4 bg-[#fef5e7] border-l-4 border-[#f59e0b] rounded-r-lg">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-bold text-[#1a202c]">
-                    Veri Yapıları - Vize
-                  </p>
-                  <p className="text-sm text-[#718096]">
-                    Prof. Dr. Mehmet Demir
-                  </p>
-                </div>
-                <span className="bg-[#fef5e7] text-[#d97706] px-3 py-1 rounded-full text-xs font-bold border border-[#f59e0b]">
-                  3 Gün Kaldı
-                </span>
-              </div>
-              <div className="flex gap-4 text-sm text-[#718096]">
-                <span>📅 15 Mayıs 2024</span>
-                <span>⏱️ 90 dakika</span>
-              </div>
+          {upcomingExams.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Yaklaşan sınavınız bulunmamaktadır.
             </div>
-            <div className="p-4 bg-[#e0e7ff] border-l-4 border-[#667eea] rounded-r-lg">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-bold text-[#1a202c]">
-                    Web Programlama - Proje
-                  </p>
-                  <p className="text-sm text-[#718096]">
-                    Dr. Öğr. Üyesi Can Yıldız
-                  </p>
-                </div>
-                <span className="bg-[#e0e7ff] text-[#667eea] px-3 py-1 rounded-full text-xs font-bold border border-[#667eea]">
-                  13 Gün Kaldı
-                </span>
-              </div>
-              <div className="flex gap-4 text-sm text-[#718096]">
-                <span>📅 25 Mayıs 2024</span>
-                <span>⏱️ Teslim Tarihi</span>
-              </div>
+          ) : (
+            <div className="space-y-4">
+              {upcomingExams.map((exam) => {
+                const daysRemaining = getDaysRemaining(exam.date);
+                const colors = getExamTypeColor(exam.examType);
+                const examTypeLabel =
+                  exam.examType.charAt(0).toUpperCase() + exam.examType.slice(1);
+
+                return (
+                  <div
+                    key={exam._id}
+                    className={`p-4 ${colors.bg} border-l-4 ${colors.border} rounded-r-lg`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-bold text-[#1a202c]">{exam.title}</p>
+                        <p className="text-sm text-[#718096]">
+                          {exam.teacher?.name} {exam.teacher?.surname}
+                        </p>
+                      </div>
+                      <span
+                        className={`${colors.bg} ${colors.text} px-3 py-1 rounded-full text-xs font-bold border ${colors.border}`}
+                      >
+                        {daysRemaining > 0
+                          ? `${daysRemaining} Gün Kaldı`
+                          : "Bugün"}
+                      </span>
+                    </div>
+                    <div className="flex gap-4 text-sm text-[#718096]">
+                      <span>📅 {formatDate(exam.date)}</span>
+                      <span>⏱️ {exam.duration} dakika</span>
+                      <span className={colors.text}>📝 {examTypeLabel}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Recent Grades (1 Column) */}
@@ -132,112 +326,72 @@ export default function StudentDashboardHome() {
               Detay →
             </Link>
           </div>
-          <div className="space-y-4">
-            {[
-              {
-                lesson: "Yapay Zeka",
-                type: "Quiz 2",
-                score: 92,
-                bg: "bg-[#f0fff4]",
-                text: "text-[#38a169]",
-              },
-              {
-                lesson: "Web Programlama",
-                type: "Vize",
-                score: 88,
-                bg: "bg-[#fef5e7]",
-                text: "text-[#d97706]",
-              },
-              {
-                lesson: "Veri Yapıları",
-                type: "Ödev 3",
-                score: 85,
-                bg: "bg-[#e6fffa]",
-                text: "text-[#319795]",
-              },
-            ].map((grade, i) => (
-              <div
-                key={i}
-                className={`p-4 ${grade.bg} rounded-lg flex justify-between items-center`}
-              >
-                <div>
-                  <p className="font-bold text-[#1a202c]">{grade.lesson}</p>
-                  <p className="text-xs text-[#718096]">{grade.type}</p>
-                </div>
-                <span className={`text-2xl font-bold ${grade.text}`}>
-                  {grade.score}
-                </span>
-              </div>
-            ))}
-          </div>
+          {recentGrades.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 text-sm">
+              Henüz notunuz bulunmamaktadır.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentGrades.map((grade) => {
+                if (!grade.exam || grade.score === null) return null;
+                const colors = getGradeColor(grade.score);
+                const examTypeLabel =
+                  grade.exam.examType.charAt(0).toUpperCase() +
+                  grade.exam.examType.slice(1);
+
+                return (
+                  <div
+                    key={grade._id || grade.exam._id}
+                    className={`p-4 ${colors.bg} rounded-lg flex justify-between items-center`}
+                  >
+                    <div>
+                      <p className="font-bold text-[#1a202c]">{grade.course.name}</p>
+                      <p className="text-xs text-[#718096]">
+                        {examTypeLabel} - {grade.exam.title}
+                      </p>
+                    </div>
+                    <span className={`text-2xl font-bold ${colors.text}`}>
+                      {grade.score}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Today's Classes */}
+      {/* My Courses */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-[#1a202c] mb-6">
-          Bugünkü Dersler
-        </h2>
-        <div className="space-y-4">
-          {[
-            {
-              time: "09:00",
-              end: "10:30",
-              name: "Veri Yapıları",
-              teacher: "Prof. Dr. Mehmet Demir",
-              loc: "A-201 Amfi",
-              status: "Devam Ediyor",
-              statusColor: "bg-[#e6fffa] text-[#319795]",
-              borderColor: "border-[#667eea]",
-            },
-            {
-              time: "11:00",
-              end: "12:30",
-              name: "Yapay Zeka",
-              teacher: "Doç. Dr. Ayşe Kara",
-              loc: "B-105 Sınıf",
-              status: "Yaklaşıyor",
-              statusColor: "bg-[#f7fafc] text-[#718096]",
-              borderColor: "border-[#a0aec0]",
-            },
-            {
-              time: "14:00",
-              end: "15:30",
-              name: "Web Programlama",
-              teacher: "Dr. Öğr. Üyesi Can Yıldız",
-              loc: "C-301 Lab",
-              status: "Planlı",
-              statusColor: "bg-[#f7fafc] text-[#718096]",
-              borderColor: "border-[#a0aec0]",
-            },
-          ].map((cls, i) => (
-            <div
-              key={i}
-              className={`grid grid-cols-[80px_1fr_auto] gap-4 items-center p-4 bg-[#f7fafc] rounded-lg border-l-4 ${cls.borderColor}`}
-            >
-              <div className="text-center">
-                <p
-                  className={`text-xl font-bold ${
-                    i === 0 ? "text-[#667eea]" : "text-[#718096]"
-                  }`}
-                >
-                  {cls.time}
-                </p>
-                <p className="text-xs text-[#718096]">{cls.end}</p>
-              </div>
-              <div>
-                <p className="font-bold text-[#1a202c]">{cls.name}</p>
-                <p className="text-sm text-[#718096]">{cls.teacher}</p>
-                <p className="text-xs text-[#667eea] mt-1">📍 {cls.loc}</p>
-              </div>
-              <span
-                className={`px-3 py-1.5 rounded-full text-xs font-bold ${cls.statusColor}`}
-              >
-                {cls.status}
-              </span>
-            </div>
-          ))}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-[#1a202c]">Derslerim</h2>
+          <Link
+            href="/student/courses"
+            className="text-[#667eea] font-semibold text-sm hover:underline"
+          >
+            Tümünü Gör →
+          </Link>
         </div>
+        {courses.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Henüz ders kaydınız bulunmamaktadır.
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courses.slice(0, 6).map((course) => (
+              <div
+                key={course._id}
+                className="p-4 bg-[#f7fafc] rounded-lg border border-gray-200 hover:border-[#667eea] transition-colors"
+              >
+                <p className="font-bold text-[#1a202c] mb-1">{course.name}</p>
+                <p className="text-xs text-[#718096] mb-2">{course.courseCode}</p>
+                <p className="text-sm text-[#667eea]">
+                  👨‍🏫 {course.teacher?.name} {course.teacher?.surname}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

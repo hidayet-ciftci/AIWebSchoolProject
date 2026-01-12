@@ -32,4 +32,5 @@ export interface Exam {
   weight: number;
   questions: Question[];
   isPublished: boolean;
+  isCompleted?: boolean; // Öğrencinin bu sınavı tamamlayıp tamamlamadığı
 }
