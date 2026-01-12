@@ -5,13 +5,18 @@ import { useProfile } from "@/hooks/useProfile";
 
 export default function TeacherExamsPage() {
   const router = useRouter();
-  const { user }: any = useProfile();
+
+  // --- DÜZELTME BURADA YAPILDI ---
+  // Hook'tan "profile" adıyla geliyor, biz bu sayfada "user" adıyla kullanmak istiyoruz.
+  // Böylece aşağıda yazdığımız user._id kodlarını değiştirmemize gerek kalmıyor.
+  // any kullanıyoruz çünkü TypeScript bazen null kontrolünde takılabiliyor.
+  const { profile: user, loading }: any = useProfile();
+
   const [exams, setExams] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Sadece temel bilgiler
+  // Form Verileri
   const [formData, setFormData] = useState({
     courseId: "",
     examType: "vize",
@@ -20,34 +25,32 @@ export default function TeacherExamsPage() {
     weight: 30,
   });
 
+  // 2. Verileri Çek
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // Dersleri Getir
-    fetch(
-      `${
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-      }/api/courses/teacher/my-courses`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setCourses(data);
-      })
-      .catch((err) => console.error("Ders hatası:", err));
+    // Sadece user (aslında profile) yüklendiyse istek at
+    if (!loading && user?._id) {
+      // Dersleri Getir
+      fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+        }/api/courses/teacher/my-courses`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setCourses(data);
+        })
+        .catch((err) => console.error("Ders hatası:", err));
 
-    // Sınavları Getir
-    if (user?._id) {
+      // Sınavları Getir
       fetch(
         `${
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
         }/api/exams/teacher/${user._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       )
         .then((res) => res.json())
         .then((data) => {
@@ -55,11 +58,22 @@ export default function TeacherExamsPage() {
         })
         .catch((err) => console.error("Sınav hatası:", err));
     }
-  }, [user]);
+  }, [user, loading]);
 
+  // 3. Sınav Oluşturma Fonksiyonu
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?._id) return;
+
+    // HATA AYIKLAMA: Konsola kullanıcı bilgisini yazdır
+    console.log("Mevcut Kullanıcı (Profile):", user);
+
+    if (!user?._id) {
+      alert(
+        "Kullanıcı bilgisi yüklenemedi. Lütfen sayfayı yenileyin veya tekrar giriş yapın."
+      );
+      return;
+    }
+
     const token = localStorage.getItem("token");
 
     try {
@@ -75,7 +89,7 @@ export default function TeacherExamsPage() {
           },
           body: JSON.stringify({
             ...formData,
-            teacherId: user._id,
+            teacherId: user._id, // User ID buradan gidiyor
           }),
         }
       );
@@ -83,14 +97,15 @@ export default function TeacherExamsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Detay sayfasına yönlendir (Sorular orada eklenecek)
+        // Başarılıysa detay sayfasına git
         router.push(`/teacher/exams/${data.exam._id}`);
       } else {
-        alert("Hata: " + data.message);
+        console.error("Backend Hatası:", data);
+        alert(`Hata: ${data.message}`);
       }
     } catch (error) {
-      console.error("Sınav oluşturma hatası:", error);
-      alert("Bir hata oluştu.");
+      console.error("Fetch Hatası:", error);
+      alert("Sunucuya bağlanılamadı.");
     }
   };
 
@@ -112,6 +127,26 @@ export default function TeacherExamsPage() {
       console.error(err);
     }
   };
+
+  // 4. EĞER YÜKLENİYORSA BEKLET
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-xl font-semibold text-gray-600">
+          Kullanıcı bilgileri yükleniyor...
+        </div>
+      </div>
+    );
+  }
+
+  // 5. EĞER USER YOKSA
+  if (!user) {
+    return (
+      <div className="p-10 text-center text-red-500 font-bold">
+        Giriş yapmanız gerekiyor veya profil alınamadı.
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fadeIn p-6 max-w-7xl mx-auto">
@@ -173,9 +208,9 @@ export default function TeacherExamsPage() {
         )}
       </div>
 
-      {/* MODAL: Sadece Sınav Bilgileri */}
+      {/* MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0  flex items-center justify-center z-50 backdrop-blur-md">
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md">
           <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl mt-40">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
               Yeni Sınav Oluştur
