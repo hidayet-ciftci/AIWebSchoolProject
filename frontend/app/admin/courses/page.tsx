@@ -79,7 +79,7 @@ export default function AdminCoursesPage() {
 
         <Link
           href="/admin/courses/create"
-          className="px-6 py-3 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+          className="px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
         >
           <span className="text-xl leading-none">+</span> Yeni Ders Ekle
         </Link>
@@ -91,7 +91,7 @@ export default function AdminCoursesPage() {
             key={course._id}
             className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group"
           >
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#667eea] to-[#764ba2]"></div>
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-linear-to-b from-[#667eea] to-[#764ba2]"></div>
 
             <div className="flex justify-between items-start mb-4 pl-3">
               <div>
