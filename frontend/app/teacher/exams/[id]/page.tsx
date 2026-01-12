@@ -4,17 +4,20 @@ import { useParams, useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
 
 export default function ExamDetailPage() {
-  const { id } = useParams(); // URL'deki sınav ID'sini al
+  const { id } = useParams();
   const router = useRouter();
 
-  // --- DÜZELTME: Hook'tan gelen 'profile'ı 'user' ismiyle alıyoruz ---
   const { profile: user, loading }: any = useProfile();
 
   const [exam, setExam] = useState<any>(null);
-  const [pageLoading, setPageLoading] = useState(true); // Sayfa içi veri yükleme durumu
+  const [pageLoading, setPageLoading] = useState(true);
 
-  // --- SORU EKLEME STATE'LERİ ---
+  // --- SORU STATE'LERİ ---
   const [questions, setQuestions] = useState<any[]>([]);
+
+  // Hangi soruyu düzenlediğimizi tutan state (null ise yeni ekleme modundayız)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
   const [newQuestion, setNewQuestion] = useState({
     questionText: "",
     questionType: "multiple_choice",
@@ -23,12 +26,13 @@ export default function ExamDetailPage() {
     points: 10,
   });
 
+  // Toplam puanı anlık hesapla
+  const totalPoints = questions.reduce((acc, q) => acc + (q.points || 0), 0);
+
   // 1. SINAV DETAYLARINI ÇEK
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token || !id) return;
-
-    // Kullanıcı yükleniyorsa bekle, yüklendiyse ve user yoksa dur
     if (loading) return;
     if (!user) return;
 
@@ -46,7 +50,6 @@ export default function ExamDetailPage() {
       })
       .then((data) => {
         setExam(data);
-        // Eğer veritabanında kayıtlı sorular varsa onları da state'e at
         if (data.questions && Array.isArray(data.questions)) {
           setQuestions(data.questions);
         }
@@ -58,10 +61,11 @@ export default function ExamDetailPage() {
       });
   }, [id, user, loading]);
 
-  // 2. LİSTEYE GEÇİCİ SORU EKLEME
-  const handleAddQuestionToList = () => {
+  // 2. LİSTEYE EKLE VEYA GÜNCELLE
+  const handleAddOrUpdateQuestion = () => {
     // Basit Validasyon
     if (!newQuestion.questionText) return alert("Soru metni boş olamaz.");
+
     if (newQuestion.questionType === "multiple_choice") {
       if (newQuestion.options.some((o) => o.trim() === ""))
         return alert("Tüm şıkları doldurun.");
@@ -70,8 +74,17 @@ export default function ExamDetailPage() {
       if (!newQuestion.correctAnswer) return alert("Beklenen cevabı girin.");
     }
 
-    // Listeye ekle
-    setQuestions([...questions, newQuestion]);
+    if (editingIndex !== null) {
+      // --- GÜNCELLEME MODU ---
+      const updatedQuestions = [...questions];
+      updatedQuestions[editingIndex] = newQuestion;
+      setQuestions(updatedQuestions);
+      setEditingIndex(null); // Modu sıfırla
+      alert("Soru güncellendi.");
+    } else {
+      // --- EKLEME MODU ---
+      setQuestions([...questions, newQuestion]);
+    }
 
     // Formu temizle
     setNewQuestion({
@@ -83,15 +96,54 @@ export default function ExamDetailPage() {
     });
   };
 
-  // 3. SORU SİLME (Listeden)
+  // 3. SORU SİLME
   const handleRemoveQuestion = (index: number) => {
+    // Eğer düzenleme modundaysak ve düzenlenen soruyu siliyorsak modu iptal et
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setNewQuestion({
+        questionText: "",
+        questionType: "multiple_choice",
+        options: ["", "", "", ""],
+        correctAnswer: "",
+        points: 10,
+      });
+    }
+
     const updated = [...questions];
     updated.splice(index, 1);
     setQuestions(updated);
   };
 
-  // 4. DEĞİŞİKLİKLERİ KAYDET (Veritabanına Gönder)
+  // --- DÜZENLEME MODUNU AÇMA ---
+  const handleEditClick = (index: number) => {
+    const questionToEdit = questions[index];
+    setNewQuestion({ ...questionToEdit }); // Formu doldur
+    setEditingIndex(index); // İndeksi kaydet
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // --- DÜZENLEMEYİ İPTAL ETME ---
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setNewQuestion({
+      questionText: "",
+      questionType: "multiple_choice",
+      options: ["", "", "", ""],
+      correctAnswer: "",
+      points: 10,
+    });
+  };
+
+  // 4. DEĞİŞİKLİKLERİ KAYDET
   const handleSaveChanges = async () => {
+    // --- KONTROL: Toplam Puan > 100 ise hata ver ---
+    if (totalPoints > 100) {
+      return alert(
+        `Kaydetmek için soruların toplam puanı 100'ü geçmemelidir.\nŞu anki toplam: ${totalPoints}`
+      );
+    }
+
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
@@ -105,13 +157,13 @@ export default function ExamDetailPage() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            questions: questions, // Güncel soru listesini gönderiyoruz
+            questions: questions,
           }),
         }
       );
 
       if (res.ok) {
-        alert("Sorular ve değişiklikler başarıyla kaydedildi!");
+        alert("Sorular başarıyla kaydedildi!");
       } else {
         alert("Kaydederken bir hata oluştu.");
       }
@@ -120,8 +172,15 @@ export default function ExamDetailPage() {
     }
   };
 
-  // 5. SINAVI YAYINLA (Öğrencilere Görünür Yap)
+  // 5. SINAVI YAYINLA
   const handlePublish = async () => {
+    // --- KONTROL: Toplam Puan TAM 100 OLMALI ---
+    if (totalPoints !== 100) {
+      return alert(
+        `Yayınlamak için soruların toplam puanı tam 100 olmalıdır.\nŞu anki toplam: ${totalPoints}`
+      );
+    }
+
     if (!confirm("Sınav yayınlanacak. Emin misiniz?")) return;
 
     const token = localStorage.getItem("token");
@@ -148,7 +207,14 @@ export default function ExamDetailPage() {
     }
   };
 
-  // --- RENDER KONTROLLERİ ---
+  // --- RENK BELİRLEME YARDIMCISI ---
+  const getPointsBadgeStyle = () => {
+    if (totalPoints === 100)
+      return "bg-green-100 text-green-700 border-green-300"; // İdeal
+    if (totalPoints < 100)
+      return "bg-yellow-100 text-yellow-700 border-yellow-300"; // Eksik
+    return "bg-red-100 text-red-700 border-red-300"; // Fazla
+  };
 
   if (loading || pageLoading) {
     return (
@@ -158,21 +224,9 @@ export default function ExamDetailPage() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="p-10 text-center text-red-500">
-        Giriş yapmanız gerekiyor.
-      </div>
-    );
-  }
-
-  if (!exam) {
-    return (
-      <div className="p-10 text-center">
-        Sınav bulunamadı veya yetkiniz yok.
-      </div>
-    );
-  }
+  if (!user)
+    return <div className="p-10 text-center text-red-500">Giriş yapınız.</div>;
+  if (!exam) return <div className="p-10 text-center">Sınav bulunamadı.</div>;
 
   return (
     <div className="animate-fadeIn p-6 max-w-6xl mx-auto space-y-8">
@@ -181,22 +235,36 @@ export default function ExamDetailPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{exam.title}</h1>
           <p className="text-gray-500 mt-1">
-            {exam.course?.name} ({exam.course?.courseCode}) |{" "}
-            {new Date(exam.date).toLocaleDateString("tr-TR")}
+            {exam.course?.name} ({exam.course?.courseCode})
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          {/* Toplam Puan Göstergesi */}
+          <div
+            className={`px-4 py-2 rounded font-bold border flex flex-col items-end text-sm ${getPointsBadgeStyle()}`}
+          >
+            <span>Toplam: {totalPoints} / 100</span>
+            {totalPoints < 100 && (
+              <span className="text-xs font-normal">
+                Yayınlamak için 100 olmalı
+              </span>
+            )}
+            {totalPoints > 100 && (
+              <span className="text-xs font-normal">Maksimum 100 olmalı</span>
+            )}
+          </div>
+
           <button
             onClick={() => router.push("/teacher/exams")}
             className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50"
           >
-            Geri Dön
+            Geri
           </button>
           <button
             onClick={handleSaveChanges}
             className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold shadow"
           >
-            Tümünü Kaydet
+            Kaydet
           </button>
           {!exam.isPublished ? (
             <button
@@ -214,18 +282,24 @@ export default function ExamDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* SOL KOLON: SORU EKLEME FORMU */}
+        {/* SOL KOLON: SORU FORM */}
         <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit sticky top-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">
-            Soru Ekle
+          <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2 flex justify-between items-center">
+            {editingIndex !== null ? "Soruyu Düzenle" : "Soru Ekle"}
+            {editingIndex !== null && (
+              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                Düzenleniyor: #{editingIndex + 1}
+              </span>
+            )}
           </h2>
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-bold mb-1">Soru Metni</label>
               <textarea
                 rows={3}
                 className="w-full border rounded p-2"
-                placeholder="Örn: Aşağıdakilerden hangisi..."
+                placeholder="Soru metni..."
                 value={newQuestion.questionText}
                 onChange={(e) =>
                   setNewQuestion({
@@ -249,7 +323,7 @@ export default function ExamDetailPage() {
                     })
                   }
                 >
-                  <option value="multiple_choice">Test (Şıklı)</option>
+                  <option value="multiple_choice">Test</option>
                   <option value="text_input">Klasik</option>
                 </select>
               </div>
@@ -269,7 +343,7 @@ export default function ExamDetailPage() {
               </div>
             </div>
 
-            {/* ŞIKLAR ALANI (Sadece test ise görünür) */}
+            {/* ŞIKLAR */}
             {newQuestion.questionType === "multiple_choice" && (
               <div className="space-y-2 bg-gray-50 p-3 rounded border border-gray-100">
                 <p className="text-xs font-bold text-gray-500 uppercase">
@@ -281,7 +355,6 @@ export default function ExamDetailPage() {
                     <input
                       type="text"
                       className="flex-1 border rounded p-1 text-sm"
-                      placeholder={`Seçenek ${optLabel}`}
                       value={newQuestion.options[idx]}
                       onChange={(e) => {
                         const newOpts = [...newQuestion.options];
@@ -306,7 +379,7 @@ export default function ExamDetailPage() {
               </div>
             )}
 
-            {/* KLASİK CEVAP ALANI */}
+            {/* KLASİK */}
             {newQuestion.questionType === "text_input" && (
               <div>
                 <label className="block text-sm font-bold mb-1">
@@ -315,7 +388,6 @@ export default function ExamDetailPage() {
                 <input
                   type="text"
                   className="w-full border rounded p-2"
-                  placeholder="Beklenen cevap..."
                   value={newQuestion.correctAnswer}
                   onChange={(e) =>
                     setNewQuestion({
@@ -327,32 +399,49 @@ export default function ExamDetailPage() {
               </div>
             )}
 
-            <button
-              onClick={handleAddQuestionToList}
-              className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition shadow"
-            >
-              + Listeye Ekle
-            </button>
+            <div className="flex gap-2">
+              {editingIndex !== null && (
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex-1 py-2 bg-gray-400 text-white rounded-lg font-bold hover:bg-gray-500 transition shadow"
+                >
+                  İptal
+                </button>
+              )}
+              <button
+                onClick={handleAddOrUpdateQuestion}
+                className={`flex-2 py-2 text-white rounded-lg font-bold transition shadow ${
+                  editingIndex !== null
+                    ? "bg-yellow-600 hover:bg-yellow-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {editingIndex !== null ? "Güncelle" : "+ Listeye Ekle"}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* SAĞ KOLON: SORU LİSTESİ */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Sınav Soruları ({questions.length})
+          <h2 className="text-xl font-bold text-gray-800 flex justify-between">
+            <span>Sınav Soruları ({questions.length})</span>
           </h2>
 
           {questions.length === 0 ? (
             <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center text-gray-500 shadow-sm">
-              Henüz bu sınava hiç soru eklenmemiş. <br />
-              Soldaki formu kullanarak soru ekleyebilirsin.
+              Soru eklenmemiş.
             </div>
           ) : (
             <div className="space-y-4">
               {questions.map((q, idx) => (
                 <div
                   key={idx}
-                  className="bg-white border rounded-lg p-5 shadow-sm relative group hover:shadow-md transition"
+                  className={`bg-white border rounded-lg p-5 shadow-sm relative group hover:shadow-md transition ${
+                    editingIndex === idx
+                      ? "border-yellow-400 ring-2 ring-yellow-100"
+                      : "border-gray-200"
+                  }`}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex gap-4 w-full">
@@ -369,13 +458,13 @@ export default function ExamDetailPage() {
                           </span>
                           <span className="bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
                             {q.questionType === "multiple_choice"
-                              ? "Çoktan Seçmeli"
+                              ? "Test"
                               : "Klasik"}
                           </span>
                         </div>
 
-                        {/* Cevap Detayı */}
-                        <div className="text-sm">
+                        {/* --- GÜNCELLENDİ: CEVAP DETAYLARI GERİ GELDİ --- */}
+                        <div className="text-sm mt-2">
                           {q.questionType === "multiple_choice" ? (
                             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {q.options?.map((opt: string, i: number) => {
@@ -412,16 +501,27 @@ export default function ExamDetailPage() {
                             </div>
                           )}
                         </div>
+                        {/* ----------------------------------------------- */}
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleRemoveQuestion(idx)}
-                      className="ml-4 text-red-400 hover:text-red-600 font-bold px-2 py-1 transition-colors"
-                      title="Sil"
-                    >
-                      🗑️
-                    </button>
+                    <div className="flex flex-col gap-2 ml-4">
+                      {/* DÜZENLEME BUTONU */}
+                      <button
+                        onClick={() => handleEditClick(idx)}
+                        className="text-yellow-600 hover:text-yellow-700 font-bold px-2 py-1 transition-colors border border-yellow-200 rounded bg-yellow-50 text-xs"
+                      >
+                        ✏️ Düzenle
+                      </button>
+
+                      {/* SİLME BUTONU */}
+                      <button
+                        onClick={() => handleRemoveQuestion(idx)}
+                        className="text-red-400 hover:text-red-600 font-bold px-2 py-1 transition-colors border border-red-200 rounded bg-red-50 text-xs"
+                      >
+                        🗑️ Sil
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
