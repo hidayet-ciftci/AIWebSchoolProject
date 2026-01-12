@@ -159,6 +159,19 @@ const deleteMaterial = async (req, res, next) => {
   }
 };
 
+const getCoursesByTeacher = async (req, res, next) => {
+  try {
+    const { teacherId } = req.params; // ID'yi URL'den alıyoruz
+    const courses = await Course.find({ teacher: teacherId }).populate(
+      "students",
+      "name surname studentNo"
+    );
+    res.status(200).json(courses);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getCourses,
   getCourseById,
