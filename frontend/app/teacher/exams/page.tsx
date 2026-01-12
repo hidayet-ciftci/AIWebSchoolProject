@@ -21,6 +21,7 @@ export default function TeacherExamsPage() {
     courseId: "",
     examType: "vize",
     date: "",
+    time: "10:00",
     duration: 45,
     weight: 30,
   });
@@ -266,6 +267,21 @@ export default function TeacherExamsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, date: e.target.value })
                     }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sınav Saati
+                  </label>
+                  <input
+                    type="time"
+                    name="time"
+                    required
+                    value={formData.time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, time: e.target.value })
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-2"
                   />
                 </div>
               </div>

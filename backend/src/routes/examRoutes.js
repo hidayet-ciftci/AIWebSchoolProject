@@ -9,6 +9,9 @@ router.get(
   verifyToken,
   examController.getExamsByTeacher
 );
+
+router.get("/student/my-exams", verifyToken, examController.getMyExams);
+
 router.get("/:id", verifyToken, examController.getExamById);
 router.put("/:id", verifyToken, examController.updateExam);
 router.delete("/:id", verifyToken, examController.deleteExam);

@@ -103,10 +103,101 @@ const deleteExam = async (req, res) => {
   }
 };
 
+const getMyExams = async (req, res) => {
+  try {
+    // 1. Token'dan gelen kullanıcı ID'sini alıyoruz (verifyToken middleware'i bunu req.user içine koyar)
+    const studentId = req.user.id;
+
+    // 2. Bu öğrencinin kayıtlı olduğu dersleri buluyoruz
+    // Course modelindeki 'students' dizisinde bu ID var mı diye bakıyoruz.
+    const enrolledCourses = await Course.find({ students: studentId }).select(
+      "_id"
+    );
+
+    // Sadece ID'lerden oluşan bir liste yapıyoruz: ["dersId1", "dersId2"]
+    const courseIds = enrolledCourses.map((course) => course._id);
+
+    // Eğer hiç dersi yoksa boş dizi dönüyoruz
+    if (courseIds.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // 3. Bu derslere ait ve YAYINLANMIŞ (isPublished: true) sınavları getiriyoruz
+    const exams = await Exam.find({
+      course: { $in: courseIds },
+      isPublished: true,
+    })
+      .populate("course", "name courseCode") // Ders adını da getir
+      .populate("teacher", "name surname") // Hoca adını da getir
+      .sort({ date: 1 }); // Yaklaşan tarihe göre sırala
+
+    res.status(200).json(exams);
+  } catch (error) {
+    console.error("Öğrenci sınavları hatası:", error);
+    res
+      .status(500)
+      .json({ message: "Sınavlar alınamadı", error: error.message });
+  }
+};
+const getExamForStudentToTake = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Sınavı bul
+    const exam = await Exam.findById(id).populate("course", "name");
+
+    if (!exam) {
+      return res.status(404).json({ message: "Sınav bulunamadı." });
+    }
+
+    // 2. Tarih ve Süre Kontrolü
+    const now = new Date();
+    const examStartDate = new Date(exam.date);
+    // Sınav bitiş zamanı = Başlangıç + Süre (dakika cinsinden)
+    const examEndDate = new Date(
+      examStartDate.getTime() + exam.duration * 60000
+    );
+
+    if (now < examStartDate) {
+      return res.status(403).json({ message: "Sınav henüz başlamadı." });
+    }
+
+    if (now > examEndDate) {
+      return res
+        .status(403)
+        .json({ message: "Sınav süresi doldu, giriş yapamazsınız." });
+    }
+
+    // 3. Soruları Güvenli Hale Getir (correctAnswer alanını çıkar)
+    // .toObject() mongoose nesnesini düz JS nesnesine çevirir, böylece üzerinde oynayabiliriz.
+    const examObj = exam.toObject();
+
+    const safeQuestions = examObj.questions.map((q) => {
+      const { correctAnswer, ...safeQuestion } = q; // correctAnswer'ı ayırıp atıyoruz
+      return safeQuestion;
+    });
+
+    // Kalan süreyi hesapla (Milisaniye cinsinden frontend'e gönderelim)
+    const remainingTime = examEndDate.getTime() - now.getTime();
+
+    res.status(200).json({
+      ...examObj,
+      questions: safeQuestions, // Cevapsız sorular
+      remainingTime: remainingTime, // Kalan süre (ms)
+    });
+  } catch (error) {
+    console.error("Sınav detayı hatası:", error);
+    res
+      .status(500)
+      .json({ message: "Sınav verisi alınamadı", error: error.message });
+  }
+};
 module.exports = {
   createExam,
   getExamsByTeacher,
   getExamById,
   updateExam,
   deleteExam,
+  getMyExams,
+  getExamForStudentToTake,
 };
