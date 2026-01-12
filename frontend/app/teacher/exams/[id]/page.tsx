@@ -131,7 +131,7 @@ export default function ExamDetailPage() {
                   Soru Metni
                 </label>
                 <textarea
-                  className="w-full border rounded p-2 text-sm min-h-[80px]"
+                  className="w-full border rounded p-2 text-sm min-h-20"
                   placeholder="Soruyu buraya yazın..."
                   value={newQuestion.questionText}
                   onChange={(e) =>

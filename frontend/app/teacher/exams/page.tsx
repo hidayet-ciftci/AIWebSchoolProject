@@ -1,18 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useProfile } from "@/hooks/useProfile"; // Profil bilgisini buradan alıyoruz
+import { useProfile } from "@/hooks/useProfile";
 
 export default function TeacherExamsPage() {
   const router = useRouter();
-  const { user }: any = useProfile(); // Giriş yapmış öğretmenin bilgileri
+  const { user }: any = useProfile();
   const [exams, setExams] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
 
-  // Modal ve Form State'leri
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [formData, setFormData] = useState({
-    title: "",
     courseId: "",
     examType: "vize",
     date: "",
@@ -20,37 +19,61 @@ export default function TeacherExamsPage() {
     weight: 30,
   });
 
-  // 1. Öğretmenin Sınavlarını ve Derslerini Çek
   useEffect(() => {
-    if (!user?._id) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-    // Sınavları Çek
+    // --- DÜZELTİLEN KISIM BURASI ---
+    // Backend'de zaten var olan "/teacher/my-courses" rotasını kullanıyoruz.
+    // Böylece backend koduna dokunmana gerek kalmıyor.
     fetch(
       `${
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-      }/api/exams/teacher/${user._id}`
+      }/api/courses/teacher/my-courses`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     )
-      .then((res) => res.json())
-      .then((data) => setExams(data))
-      .catch((err) => console.error("Sınavlar yüklenemedi:", err));
+      .then((res) => {
+        if (!res.ok) throw new Error("Dersler çekilemedi");
+        return res.json();
+      })
+      .then((data) => {
+        // Gelen veri array mi kontrol et, değilse boş array yap
+        if (Array.isArray(data)) {
+          setCourses(data);
+        } else {
+          console.error("Ders verisi dizi formatında gelmedi:", data);
+          setCourses([]);
+        }
+      })
+      .catch((err) => console.error("Ders yükleme hatası:", err));
+    // -------------------------------
 
-    // Dersleri Çek (Select kutusu için gerekli)
-    // Not: Eğer /api/courses/teacher/:id rotan yoksa, bunu backend'e eklemen gerekebilir.
-    // Şimdilik varsayılan /api/courses rotasını deniyoruz veya senin rotana göre düzenle.
-    fetch(
-      `${
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-      }/api/courses/teacher/${user._id}`
-    )
-      .then((res) => res.json())
-      .then((data) => setCourses(data))
-      .catch((err) => console.error("Dersler yüklenemedi:", err));
+    // Sınavları getir (Burada da user._id kullanıyorduk, o çalışıyordu)
+    if (user?._id) {
+      fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+        }/api/exams/teacher/${user._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setExams(data);
+        })
+        .catch((err) => console.error("Sınavlar yüklenemedi:", err));
+    }
   }, [user]);
 
-  // 2. Sınav Oluşturma İşlemi
   const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?._id) return;
+    const token = localStorage.getItem("token");
 
     try {
       const response = await fetch(
@@ -59,10 +82,13 @@ export default function TeacherExamsPage() {
         }/api/exams/create`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             ...formData,
-            teacherId: user._id, // Öğretmen ID'sini ekliyoruz
+            teacherId: user._id,
           }),
         }
       );
@@ -70,13 +96,38 @@ export default function TeacherExamsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Başarılıysa detay sayfasına yönlendir (Soru eklemek için)
         router.push(`/teacher/exams/${data.exam._id}`);
       } else {
         alert("Hata: " + data.message);
       }
     } catch (error) {
       console.error("Sınav oluşturma hatası:", error);
+      alert("Bir hata oluştu.");
+    }
+  };
+
+  const handleDeleteExam = async (examId: string) => {
+    if (!confirm("Bu sınavı silmek istediğinize emin misiniz?")) return;
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+        }/api/exams/${examId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res.ok) {
+        setExams(exams.filter((e) => e._id !== examId));
+      } else {
+        alert("Silme işlemi başarısız oldu.");
+      }
+    } catch (error) {
+      console.error("Silme hatası:", error);
     }
   };
 
@@ -92,7 +143,6 @@ export default function TeacherExamsPage() {
         </button>
       </div>
 
-      {/* Sınav Listesi */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-600 font-bold border-b">
@@ -113,28 +163,17 @@ export default function TeacherExamsPage() {
                   {exam.course?.name || "Bilinmiyor"}
                 </td>
                 <td className="p-4 text-gray-600">
-                  {new Date(exam.date).toLocaleDateString()}
+                  {new Date(exam.date).toLocaleDateString("tr-TR")}
                 </td>
                 <td className="p-4">
                   <button
                     onClick={() => router.push(`/teacher/exams/${exam._id}`)}
-                    className="px-4 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 mr-2"
+                    className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 mr-2"
                   >
-                    Soruları Düzenle
+                    Düzenle / Sorular
                   </button>
                   <button
-                    onClick={async () => {
-                      if (confirm("Silmek istediğine emin misin?")) {
-                        await fetch(
-                          `${
-                            process.env.NEXT_PUBLIC_API_URL ||
-                            "http://localhost:5000"
-                          }/api/exams/${exam._id}`,
-                          { method: "DELETE" }
-                        );
-                        setExams(exams.filter((e) => e._id !== exam._id));
-                      }
-                    }}
+                    onClick={() => handleDeleteExam(exam._id)}
                     className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                   >
                     Sil
@@ -151,28 +190,11 @@ export default function TeacherExamsPage() {
         )}
       </div>
 
-      {/* MODAL: Yeni Sınav Oluştur */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-lg">
             <h2 className="text-2xl font-bold mb-4">Yeni Sınav Oluştur</h2>
             <form onSubmit={handleCreateExam} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sınav Başlığı
-                </label>
-                <input
-                  required
-                  type="text"
-                  className="w-full border rounded p-2"
-                  placeholder="Örn: Veri Yapıları Vize"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Ders Seçin
