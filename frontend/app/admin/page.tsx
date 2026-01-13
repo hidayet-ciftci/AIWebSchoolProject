@@ -109,7 +109,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:-translate-y-1 transition-transform">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl text-white shadow-md">
+          <div className="w-14 h-14 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl text-white shadow-md">
             👨‍🎓
           </div>
           <div>
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:-translate-y-1 transition-transform">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-3xl text-white shadow-md">
+          <div className="w-14 h-14 rounded-full bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center text-3xl text-white shadow-md">
             👨‍🏫
           </div>
           <div>
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:-translate-y-1 transition-transform">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-3xl text-white shadow-md">
+          <div className="w-14 h-14 rounded-full bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center text-3xl text-white shadow-md">
             📚
           </div>
           <div>
@@ -158,7 +158,10 @@ export default function AdminDashboard() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {recentUsers.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={user._id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
                     <td className="p-4 font-semibold text-[#1a202c]">
                       {user.name} {user.surname}
                     </td>
