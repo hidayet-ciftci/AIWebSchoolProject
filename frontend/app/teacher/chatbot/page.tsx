@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function TeacherChatbotPage() {
+  const router = useRouter();
   const [messages, setMessages] = useState<
     { role: "user" | "ai"; text: string }[]
   >([
@@ -12,22 +15,59 @@ export default function TeacherChatbotPage() {
     },
   ]);
   const [inputText, setInputText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) router.push("/");
+  }, [router]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-    setMessages((prev) => [...prev, { role: "user", text: inputText }]);
-    const tempInput = inputText;
+    if (!inputText.trim() || isSending) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
+      router.push("/");
+      return;
+    }
+
+    const userMessage = inputText;
+    setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
     setInputText("");
-    setTimeout(() => {
+
+    try {
+      setIsSending(true);
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg =
+          (data && (data.message || data.error)) ||
+          "AI yanıtı alınamadı. Lütfen tekrar deneyin.";
+        throw new Error(msg);
+      }
+
+      const reply = typeof data?.reply === "string" ? data.reply : "";
       setMessages((prev) => [
         ...prev,
-        {
-          role: "ai",
-          text: `"${tempInput}" ile ilgili talebinizi değerlendiriyorum.`,
-        },
+        { role: "ai", text: reply || "Şu an yanıt üretemedim, tekrar dener misin?" },
       ]);
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Beklenmedik bir hata oluştu.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -81,13 +121,15 @@ export default function TeacherChatbotPage() {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Mesajınızı yazın..."
-            className="flex-1 p-3 border-2 border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#667eea]"
+            disabled={isSending}
+            className="flex-1 p-3 border-2 border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#667eea] disabled:opacity-60"
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-bold hover:-translate-y-0.5 transition-transform cursor-pointer"
+            disabled={isSending}
+            className="px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-bold hover:-translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60 disabled:hover:translate-y-0"
           >
-            Gönder
+            {isSending ? "Gönderiliyor..." : "Gönder"}
           </button>
         </form>
       </div>

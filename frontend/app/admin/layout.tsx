@@ -28,7 +28,7 @@ export default function AdminLayout({
         return;
       }
 
-        try {
+      try {
         const user = JSON.parse(userStr);
         if (user.role !== "admin") {
           toast.error("Bu alana sadece yöneticiler girebilir!");
@@ -121,6 +121,7 @@ export default function AdminLayout({
           <NavLink href="/admin/profile" icon="" label="Profil" />
           <NavLink href="/admin/courses" icon="" label="Ders Yönetimi" />
           <NavLink href="/admin/register" icon="" label="Kullanıcı Ekle" />
+          <NavLink href="/admin/chatbot" icon="" label="ChatBot" />
         </nav>
 
         <button

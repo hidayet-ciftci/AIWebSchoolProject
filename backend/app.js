@@ -8,7 +8,7 @@ const path = require("path");
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
-  })
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -26,6 +26,7 @@ const examRouter = require("./src/routes/examRoutes");
 const errorHandler = require("./src/middlewares/errorHandler");
 const gradeRouter = require("./src/routes/gradeRoutes");
 const logger = require("./src/middlewares/logger");
+const chatRouter = require("./src/routes/chat");
 
 app.use(logger);
 app.use("/auth", authRouter);
@@ -33,6 +34,7 @@ app.use("/api/users", apiRouter);
 app.use("/api/courses", courseRouter);
 app.use("/api/exams", examRouter);
 app.use("/api/grades", gradeRouter);
+app.use("/chat", chatRouter);
 app.use(errorHandler);
 
 app.listen(process.env.PORT);
