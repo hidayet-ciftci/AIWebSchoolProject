@@ -59,7 +59,7 @@ export default function AdminDashboard() {
   const totalStudents = users.filter((u) => u.role === "student").length;
   const totalTeachers = users.filter((u) => u.role === "teacher").length;
   const activeCourses = courses.filter(
-    (c) => !c.status || c.status === "Aktif"
+    (c) => !c.status || c.status === "Aktif",
   ).length;
 
   const recentUsers = [...users]
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
                     <td className="p-4">
                       <span
                         className={`px-2 py-1 rounded text-xs font-bold ${getRoleColor(
-                          user.role
+                          user.role,
                         )}`}
                       >
                         {getRoleLabel(user.role)}
