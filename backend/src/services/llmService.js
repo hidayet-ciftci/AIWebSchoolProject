@@ -2,6 +2,36 @@ const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || "llama3";
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL || "nomic-embed-text:latest";
 
+function toPositiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const GENERATE_TIMEOUT_MS = toPositiveNumber(
+  process.env.OLLAMA_GENERATE_TIMEOUT_MS,
+  45_000,
+);
+const RAG_GENERATE_TIMEOUT_MS = toPositiveNumber(
+  process.env.OLLAMA_RAG_TIMEOUT_MS,
+  120_000,
+);
+const EMBED_TIMEOUT_MS = toPositiveNumber(
+  process.env.OLLAMA_EMBED_TIMEOUT_MS,
+  60_000,
+);
+const MAX_CONTEXT_SOURCES = Math.max(
+  1,
+  Math.floor(toPositiveNumber(process.env.RAG_CONTEXT_SOURCES, 3)),
+);
+const MAX_CONTEXT_CHARS = Math.max(
+  1000,
+  Math.floor(toPositiveNumber(process.env.RAG_CONTEXT_CHAR_LIMIT, 3200)),
+);
+const MAX_RESPONSE_TOKENS = Math.max(
+  64,
+  Math.floor(toPositiveNumber(process.env.OLLAMA_NUM_PREDICT, 220)),
+);
+
 let cachedModel = null;
 
 function isEmbeddingModel(modelName = "") {
@@ -22,7 +52,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchJson(url, options = {}, timeoutMs = 30_000) {
+async function fetchJson(url, options = {}, timeoutMs = GENERATE_TIMEOUT_MS) {
   if (typeof fetch !== "function") {
     const err = new Error(
       "Bu Node.js sürümünde global fetch yok. Node 18+ kullanın.",
@@ -69,8 +99,9 @@ async function fetchJson(url, options = {}, timeoutMs = 30_000) {
     return data;
   } catch (e) {
     if (e?.name === "AbortError") {
+      const seconds = Math.round(timeoutMs / 1000);
       const err = new Error(
-        "Ollama yanıt vermedi (timeout). Ollama çalışıyor mu kontrol edin.",
+        `Ollama yanıt vermedi (${seconds}sn timeout). Ollama çalışıyor mu kontrol edin.`,
       );
       err.statusCode = 504;
       throw err;
@@ -145,10 +176,41 @@ async function resolveModel() {
   throw err;
 }
 
+function limitContextChunks(contextChunks = []) {
+  if (!Array.isArray(contextChunks) || !contextChunks.length) {
+    return [];
+  }
+
+  const limited = [];
+  let remainingChars = MAX_CONTEXT_CHARS;
+
+  for (const chunk of contextChunks.slice(0, MAX_CONTEXT_SOURCES)) {
+    const rawText = typeof chunk?.text === "string" ? chunk.text.trim() : "";
+    if (!rawText || remainingChars <= 0) {
+      continue;
+    }
+
+    const trimmedText = rawText.slice(0, remainingChars).trim();
+    if (!trimmedText) {
+      continue;
+    }
+
+    limited.push({
+      ...chunk,
+      text: trimmedText,
+    });
+
+    remainingChars -= trimmedText.length;
+  }
+
+  return limited;
+}
+
 function buildPrompt({ message, user, contextChunks = [], courseName = "" }) {
-  const hasContext = Array.isArray(contextChunks) && contextChunks.length > 0;
+  const limitedContextChunks = limitContextChunks(contextChunks);
+  const hasContext = limitedContextChunks.length > 0;
   const systemPrompt = hasContext
-    ? "Her zaman Türkçe cevap ver. Açıklayıcı ve öğretici bir dil kullan. Sadece verilen materyal bağlamına göre cevap ver. Eğer cevap bağlam içinde yoksa tam olarak 'Bu materyaller içinde buna dair bilgi bulamadım.' de. Tahmin yürütme, uydurma bilgi verme ve bağlam dışına çıkma."
+    ? "Her zaman Türkçe cevap ver. Açıklayıcı ama kısa bir dil kullan. Sadece verilen materyal bağlamına göre cevap ver. Eğer cevap bağlam içinde yoksa tam olarak 'Bu materyaller içinde buna dair bilgi bulamadım.' de. Tahmin yürütme, uydurma bilgi verme ve bağlam dışına çıkma. Mümkünse en fazla 5-6 cümle kullan."
     : "Her zaman Türkçe cevap ver. Açıklayıcı ve öğretici bir dil kullan. Kısa, net ve uygulanabilir öneriler ver. Eğer kullanıcı eğitim/okul bağlamında soru soruyorsa örneklerle anlat. Yanıtında gereksiz İngilizce kullanma.";
 
   const roleInfo =
@@ -171,7 +233,7 @@ function buildPrompt({ message, user, contextChunks = [], courseName = "" }) {
   const contextBlock = hasContext
     ? [
         "MATERYAL BAĞLAMI:",
-        ...contextChunks.map((chunk, index) => {
+        ...limitedContextChunks.map((chunk, index) => {
           const sourceName = chunk?.metadata?.fileName || `Kaynak-${index + 1}`;
           return `[Kaynak ${index + 1}] ${sourceName}\n${chunk.text}`;
         }),
@@ -192,14 +254,18 @@ function buildPrompt({ message, user, contextChunks = [], courseName = "" }) {
 
 async function requestEmbeddings(cleanedTexts) {
   try {
-    const data = await fetchJson(`${OLLAMA_BASE_URL}/api/embed`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: EMBED_MODEL,
-        input: cleanedTexts,
-      }),
-    });
+    const data = await fetchJson(
+      `${OLLAMA_BASE_URL}/api/embed`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: EMBED_MODEL,
+          input: cleanedTexts,
+        }),
+      },
+      EMBED_TIMEOUT_MS,
+    );
 
     if (Array.isArray(data?.embeddings) && data.embeddings.length > 0) {
       return data.embeddings;
@@ -210,14 +276,18 @@ async function requestEmbeddings(cleanedTexts) {
 
   const embeddings = [];
   for (const text of cleanedTexts) {
-    const data = await fetchJson(`${OLLAMA_BASE_URL}/api/embeddings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: EMBED_MODEL,
-        prompt: text,
-      }),
-    });
+    const data = await fetchJson(
+      `${OLLAMA_BASE_URL}/api/embeddings`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: EMBED_MODEL,
+          prompt: text,
+        }),
+      },
+      EMBED_TIMEOUT_MS,
+    );
 
     const vector =
       data?.embedding ||
@@ -270,12 +340,17 @@ async function generateReply({
   const model = await resolveModel();
   const prompt = buildPrompt({ message, user, contextChunks, courseName });
 
+  const timeoutMs = contextChunks.length
+    ? Math.max(RAG_GENERATE_TIMEOUT_MS, GENERATE_TIMEOUT_MS)
+    : GENERATE_TIMEOUT_MS;
+
   const payload = {
     model,
     prompt,
     stream: false,
     options: {
-      temperature: 0.7,
+      temperature: 0.4,
+      num_predict: MAX_RESPONSE_TOKENS,
     },
   };
 
@@ -284,11 +359,15 @@ async function generateReply({
   // Bu yüzden "runner process has terminated" hatasında 1 kez retry yapıyoruz.
   let data;
   try {
-    data = await fetchJson(`${OLLAMA_BASE_URL}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    data = await fetchJson(
+      `${OLLAMA_BASE_URL}/api/generate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+      timeoutMs,
+    );
   } catch (e) {
     const msg = String(e?.message || e).toLowerCase();
     if (
@@ -297,11 +376,15 @@ async function generateReply({
       msg.includes("model süreci kapandı")
     ) {
       await sleep(750);
-      data = await fetchJson(`${OLLAMA_BASE_URL}/api/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      data = await fetchJson(
+        `${OLLAMA_BASE_URL}/api/generate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        timeoutMs,
+      );
     } else {
       throw e;
     }
