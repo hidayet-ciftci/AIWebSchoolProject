@@ -1,5 +1,10 @@
+const fs = require("fs");
+const path = require("path");
+const mongoose = require("mongoose");
 const Course = require("../models/Course");
 const User = require("../models/User");
+const { enqueueMaterialIngestion } = require("../queue/ragIngestionQueue");
+const { deleteMaterialChunks } = require("../services/rag/chromaService");
 
 const getCourses = async (req, res, next) => {
   try {
@@ -53,7 +58,7 @@ const updateCourse = async (req, res, next) => {
     const updateCourse = await Course.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true }
+      { new: true },
     );
     if (!updateCourse)
       return res.status(404).json({ message: "course not Found" });
@@ -80,7 +85,7 @@ const getTeacherCourses = async (req, res, next) => {
     const teacherId = req.user.id;
     const courses = await Course.find({ teacher: teacherId }).populate(
       "students",
-      "name surname studentNo"
+      "name surname studentNo",
     );
     res.status(200).json(courses);
   } catch (err) {
@@ -93,7 +98,7 @@ const getStudentCourses = async (req, res, next) => {
     const studentId = req.user.id;
     const courses = await Course.find({ students: studentId }).populate(
       "teacher",
-      "name surname"
+      "name surname",
     );
     res.status(200).json(courses);
   } catch (err) {
@@ -110,22 +115,63 @@ const uploadMaterial = async (req, res, next) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
+    const materialId = new mongoose.Types.ObjectId();
     const newMaterial = {
+      _id: materialId,
       title: title || req.file.originalname,
       fileName: req.file.filename,
       fileUrl: `/uploads/notes/${req.file.filename}`,
+      mimeType: req.file.mimetype,
+      status: "pending",
+      hash: "",
+      chunksCount: 0,
+      indexingError: "",
       uploadedAt: Date.now(),
     };
 
     const updatedCourse = await Course.findByIdAndUpdate(
       id,
       { $push: { materials: newMaterial } },
-      { new: true }
+      { new: true },
     );
 
-    res
-      .status(200)
-      .json({ message: "Material uploaded", course: updatedCourse });
+    if (!updatedCourse) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    let queueStatus = "queued";
+
+    try {
+      await enqueueMaterialIngestion({
+        courseId: String(id),
+        materialId: String(materialId),
+        filePath: path.resolve(req.file.path),
+        fileName: req.file.originalname,
+        mimeType: req.file.mimetype,
+      });
+    } catch (queueError) {
+      queueStatus = "failed";
+      await Course.updateOne(
+        { _id: id, "materials._id": materialId },
+        {
+          $set: {
+            "materials.$.status": "failed",
+            "materials.$.indexingError": `Queue hatası: ${queueError.message}`,
+          },
+        },
+      );
+    }
+
+    const finalCourse = await Course.findById(id);
+
+    res.status(202).json({
+      message:
+        queueStatus === "queued"
+          ? "Material uploaded and indexing queued"
+          : "Material uploaded but indexing could not be queued",
+      queueStatus,
+      course: finalCourse,
+    });
   } catch (err) {
     next(err);
   }
@@ -134,16 +180,36 @@ const uploadMaterial = async (req, res, next) => {
 const deleteMaterial = async (req, res, next) => {
   try {
     const { id, materialId } = req.params;
+    const course = await Course.findById(id);
 
-    const updatedCourse = await Course.findByIdAndUpdate(
-      id,
-      { $pull: { materials: { _id: materialId } } },
-      { new: true }
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    const material = course.materials.id(materialId);
+    if (!material) {
+      return res.status(404).json({ message: "Material not found" });
+    }
+
+    try {
+      await deleteMaterialChunks({ materialId: String(materialId) });
+    } catch (vectorError) {
+      console.error("Chroma silme hatası:", vectorError.message);
+    }
+
+    const diskPath = path.join(
+      process.cwd(),
+      material.fileUrl.replace(/^\/+/, "").replace(/\//g, path.sep),
     );
 
-    res
-      .status(200)
-      .json({ message: "Material deleted", course: updatedCourse });
+    if (fs.existsSync(diskPath)) {
+      fs.unlinkSync(diskPath);
+    }
+
+    course.materials.pull({ _id: materialId });
+    await course.save();
+
+    res.status(200).json({ message: "Material deleted", course });
   } catch (err) {
     next(err);
   }

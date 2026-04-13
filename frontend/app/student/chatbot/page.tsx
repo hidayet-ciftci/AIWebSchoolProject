@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { clearAllChatMessages, useChatMessages } from "@/hooks/useChatMessages";
 
+type CourseOption = {
+  _id: string;
+  name: string;
+  courseCode?: string;
+};
+
 export default function ChatbotPage() {
   const router = useRouter();
   const initialAiMessage =
@@ -15,12 +21,41 @@ export default function ChatbotPage() {
   );
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) router.push("/");
   }, [router]);
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API_URL}/api/courses/student/my-courses`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json().catch(() => []);
+        if (!res.ok || !Array.isArray(data)) return;
+
+        setCourses(data);
+        setSelectedCourseId((current) => current || data[0]?._id || "");
+      } catch (error) {
+        console.error("Dersler yüklenemedi:", error);
+      }
+    };
+
+    if (API_URL) {
+      loadCourses();
+    }
+  }, [API_URL]);
 
   const handleClearChat = () => {
     setMessages([{ role: "ai", text: initialAiMessage }]);
@@ -47,13 +82,17 @@ export default function ChatbotPage() {
 
     try {
       setIsSending(true);
+      const payload = selectedCourseId
+        ? { message: userMessage, courseId: selectedCourseId }
+        : { message: userMessage };
+
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(() => null);
@@ -109,14 +148,34 @@ export default function ChatbotPage() {
               Size yardımcı olmak için buradayım!
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleClearChat}
-            disabled={isSending}
-            className="ml-auto px-4 py-2 border border-red-200 text-red-500 rounded-lg font-semibold hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-60"
-          >
-            Sohbeti Sil
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">
+                Aktif ders
+              </label>
+              <select
+                value={selectedCourseId}
+                onChange={(e) => setSelectedCourseId(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+              >
+                <option value="">Genel sohbet</option>
+                {courses.map((course) => (
+                  <option key={course._id} value={course._id}>
+                    {course.name}
+                    {course.courseCode ? ` (${course.courseCode})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearChat}
+              disabled={isSending}
+              className="ml-auto px-4 py-2 border border-red-200 text-red-500 rounded-lg font-semibold hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-60"
+            >
+              Sohbeti Sil
+            </button>
+          </div>
         </div>
 
         {/* Messages */}

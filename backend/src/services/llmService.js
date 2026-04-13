@@ -1,5 +1,6 @@
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || "llama3";
+const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL || "nomic-embed-text:latest";
 
 let cachedModel = null;
 
@@ -56,6 +57,7 @@ async function fetchJson(url, options = {}, timeoutMs = 30_000) {
           "Ollama model süreci kapandı. Bu genellikle bellek (RAM/VRAM) yetersizliği veya model/runner sorunu nedeniyle olur. Daha küçük bir model deneyin veya Ollama'yı yeniden başlatıp tekrar deneyin.",
         );
         err.statusCode = 503;
+        err.code = "OLLAMA_RUNNER_TERMINATED";
         throw err;
       }
 
@@ -143,9 +145,11 @@ async function resolveModel() {
   throw err;
 }
 
-function buildPrompt({ message, user }) {
-  const systemPrompt =
-    "Her zaman Türkçe cevap ver. Açıklayıcı ve öğretici bir dil kullan. Kısa, net ve uygulanabilir öneriler ver. Eğer kullanıcı eğitim/okul bağlamında soru soruyorsa örneklerle anlat. Yanıtında gereksiz İngilizce kullanma.";
+function buildPrompt({ message, user, contextChunks = [], courseName = "" }) {
+  const hasContext = Array.isArray(contextChunks) && contextChunks.length > 0;
+  const systemPrompt = hasContext
+    ? "Her zaman Türkçe cevap ver. Açıklayıcı ve öğretici bir dil kullan. Sadece verilen materyal bağlamına göre cevap ver. Eğer cevap bağlam içinde yoksa tam olarak 'Bu materyaller içinde buna dair bilgi bulamadım.' de. Tahmin yürütme, uydurma bilgi verme ve bağlam dışına çıkma."
+    : "Her zaman Türkçe cevap ver. Açıklayıcı ve öğretici bir dil kullan. Kısa, net ve uygulanabilir öneriler ver. Eğer kullanıcı eğitim/okul bağlamında soru soruyorsa örneklerle anlat. Yanıtında gereksiz İngilizce kullanma.";
 
   const roleInfo =
     user?.role === "admin"
@@ -163,19 +167,108 @@ function buildPrompt({ message, user }) {
         ? `Kullanıcı adı: ${user.name}.`
         : "";
 
+  const courseInfo = courseName ? `Ders adı: ${courseName}.` : "";
+  const contextBlock = hasContext
+    ? [
+        "MATERYAL BAĞLAMI:",
+        ...contextChunks.map((chunk, index) => {
+          const sourceName = chunk?.metadata?.fileName || `Kaynak-${index + 1}`;
+          return `[Kaynak ${index + 1}] ${sourceName}\n${chunk.text}`;
+        }),
+      ].join("\n\n")
+    : "";
+
   return [
     `SİSTEM: ${systemPrompt}`,
     `BAĞLAM: ${roleInfo} ${nameInfo}`.trim(),
+    courseInfo ? `DERS: ${courseInfo}` : "",
+    contextBlock,
     `KULLANICI: ${message}`,
     "ASİSTAN:",
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("\n\n");
 }
 
-async function generateReply({ message, user }) {
+async function requestEmbeddings(cleanedTexts) {
+  try {
+    const data = await fetchJson(`${OLLAMA_BASE_URL}/api/embed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: EMBED_MODEL,
+        input: cleanedTexts,
+      }),
+    });
+
+    if (Array.isArray(data?.embeddings) && data.embeddings.length > 0) {
+      return data.embeddings;
+    }
+  } catch {
+    // Bazı Ollama sürümleri /api/embed yerine legacy embeddings endpointi kullanır.
+  }
+
+  const embeddings = [];
+  for (const text of cleanedTexts) {
+    const data = await fetchJson(`${OLLAMA_BASE_URL}/api/embeddings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: EMBED_MODEL,
+        prompt: text,
+      }),
+    });
+
+    const vector =
+      data?.embedding ||
+      (Array.isArray(data?.embeddings) ? data.embeddings[0] : null);
+
+    if (!Array.isArray(vector)) {
+      const err = new Error("Embedding modeli geçerli bir vektör döndürmedi.");
+      err.statusCode = 502;
+      throw err;
+    }
+
+    embeddings.push(vector);
+  }
+
+  return embeddings;
+}
+
+async function embedTexts(texts = []) {
+  const cleanedTexts = texts
+    .map((text) => (typeof text === "string" ? text.trim() : ""))
+    .filter(Boolean);
+
+  if (!cleanedTexts.length) {
+    return [];
+  }
+
+  try {
+    return await requestEmbeddings(cleanedTexts);
+  } catch (error) {
+    const message = String(error?.message || "").toLowerCase();
+    if (
+      error?.code === "OLLAMA_RUNNER_TERMINATED" ||
+      message.includes("runner process has terminated") ||
+      message.includes("model süreci kapandı")
+    ) {
+      await sleep(750);
+      return requestEmbeddings(cleanedTexts);
+    }
+
+    throw error;
+  }
+}
+
+async function generateReply({
+  message,
+  user,
+  contextChunks = [],
+  courseName = "",
+}) {
   const model = await resolveModel();
-  const prompt = buildPrompt({ message, user });
+  const prompt = buildPrompt({ message, user, contextChunks, courseName });
 
   const payload = {
     model,
@@ -198,7 +291,11 @@ async function generateReply({ message, user }) {
     });
   } catch (e) {
     const msg = String(e?.message || e).toLowerCase();
-    if (msg.includes("runner process has terminated")) {
+    if (
+      e?.code === "OLLAMA_RUNNER_TERMINATED" ||
+      msg.includes("runner process has terminated") ||
+      msg.includes("model süreci kapandı")
+    ) {
       await sleep(750);
       data = await fetchJson(`${OLLAMA_BASE_URL}/api/generate`, {
         method: "POST",
@@ -221,5 +318,6 @@ async function generateReply({ message, user }) {
 }
 
 module.exports = {
+  embedTexts,
   generateReply,
 };

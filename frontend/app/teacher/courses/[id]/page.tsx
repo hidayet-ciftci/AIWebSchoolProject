@@ -1,6 +1,18 @@
 // frontend/app/teacher/courses/[id]/page.tsx
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
+
+type CourseMaterial = {
+  _id: string;
+  title: string;
+  fileUrl: string;
+  status?: string;
+};
+
+type CourseDetail = {
+  name: string;
+  materials?: CourseMaterial[];
+};
 
 export default function CourseDetailPage({
   params,
@@ -10,22 +22,49 @@ export default function CourseDetailPage({
   // params promise olduğu için unwrap yapıyoruz
   const { id } = use(params);
 
-  const [course, setCourse] = useState<any>(null);
+  const [course, setCourse] = useState<CourseDetail | null>(null);
   const [file, setFile] = useState<File | null>(null);
 
+  const getStatusMeta = (status?: string) => {
+    switch (status) {
+      case "ready":
+        return {
+          label: "Hazır",
+          className: "bg-green-100 text-green-700",
+        };
+      case "processing":
+        return {
+          label: "İşleniyor",
+          className: "bg-blue-100 text-blue-700",
+        };
+      case "failed":
+        return {
+          label: "Hata",
+          className: "bg-red-100 text-red-700",
+        };
+      default:
+        return {
+          label: "Hazırlanıyor",
+          className: "bg-yellow-100 text-yellow-700",
+        };
+    }
+  };
+
   // Ders verilerini çek
-  const fetchCourse = async () => {
+  const fetchCourse = useCallback(async () => {
     const token = localStorage.getItem("token");
     const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
     setCourse(data);
-  };
+  }, [id]);
 
   useEffect(() => {
-    fetchCourse();
-  }, [id]);
+    queueMicrotask(() => {
+      void fetchCourse();
+    });
+  }, [fetchCourse]);
 
   // Dosya Yükleme Fonksiyonu
   const handleUpload = async (e: React.FormEvent) => {
@@ -43,7 +82,7 @@ export default function CourseDetailPage({
       body: formData,
     });
 
-    alert("Dosya yüklendi!");
+    alert("Dosya yüklendi ve RAG indeksleme kuyruğuna alındı!");
     setFile(null);
     fetchCourse();
   };
@@ -56,7 +95,7 @@ export default function CourseDetailPage({
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
     fetchCourse();
   };
@@ -83,6 +122,10 @@ export default function CourseDetailPage({
             Yükle
           </button>
         </form>
+        <p className="text-sm text-gray-500 mt-3">
+          Yüklenen materyaller arka planda işlenir. Durum bilgisini aşağıdaki
+          listeden takip edebilirsiniz.
+        </p>
       </div>
 
       {/* Yüklü Dosyalar Listesi */}
@@ -92,18 +135,25 @@ export default function CourseDetailPage({
           <p>Henüz materyal yüklenmemiş.</p>
         ) : (
           <ul className="space-y-3">
-            {course.materials?.map((mat: any) => (
+            {course.materials?.map((mat: CourseMaterial) => (
               <li
                 key={mat._id}
                 className="flex justify-between items-center border-b pb-2"
               >
-                <a
-                  href={`http://localhost:5000${mat.fileUrl}`}
-                  target="_blank"
-                  className="text-blue-600 hover:underline flex items-center gap-2"
-                >
-                  📄 {mat.title}
-                </a>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`http://localhost:5000${mat.fileUrl}`}
+                    target="_blank"
+                    className="text-blue-600 hover:underline flex items-center gap-2"
+                  >
+                    📄 {mat.title}
+                  </a>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusMeta(mat.status).className}`}
+                  >
+                    {getStatusMeta(mat.status).label}
+                  </span>
+                </div>
                 <button
                   onClick={() => handleDelete(mat._id)}
                   className="text-red-500 hover:text-red-700 text-sm"
