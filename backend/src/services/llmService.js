@@ -3,6 +3,20 @@ const DEFAULT_MODEL = process.env.OLLAMA_MODEL || "llama3";
 
 let cachedModel = null;
 
+function isEmbeddingModel(modelName = "") {
+  const normalized = modelName.toLowerCase().trim();
+  return (
+    normalized.includes("embed") ||
+    normalized.startsWith("nomic-embed") ||
+    normalized.includes("bge-") ||
+    normalized.includes("e5-")
+  );
+}
+
+function pickGenerativeModel(modelNames = []) {
+  return modelNames.find((name) => !isEmbeddingModel(name));
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -81,10 +95,6 @@ async function fetchJson(url, options = {}, timeoutMs = 30_000) {
 async function resolveModel() {
   if (cachedModel) return cachedModel;
 
-  // Önce varsayılan model ile deneyelim.
-  cachedModel = DEFAULT_MODEL;
-
-  // Eğer model yoksa, /api/tags üzerinden ilk modeli seçebilmek için liste alacağız.
   try {
     const tags = await fetchJson(`${OLLAMA_BASE_URL}/api/tags`, {
       method: "GET",
@@ -95,19 +105,42 @@ async function resolveModel() {
       .map((m) => m?.name)
       .filter((n) => typeof n === "string" && n.length > 0);
 
-    if (names.includes(DEFAULT_MODEL)) {
-      cachedModel = DEFAULT_MODEL;
+    const normalizedDefault = DEFAULT_MODEL.toLowerCase();
+    const preferredModel = names.find((name) => {
+      const normalizedName = name.toLowerCase();
+      return (
+        normalizedName === normalizedDefault ||
+        normalizedName === `${normalizedDefault}:latest` ||
+        normalizedName.split(":")[0] === normalizedDefault
+      );
+    });
+
+    if (preferredModel && !isEmbeddingModel(preferredModel)) {
+      cachedModel = preferredModel;
       return cachedModel;
     }
 
-    if (names.length > 0) {
-      cachedModel = names[0];
+    const fallbackModel = pickGenerativeModel(names);
+    if (fallbackModel) {
+      cachedModel = fallbackModel;
+      return cachedModel;
     }
-  } catch {
-    // /api/tags başarısız olsa bile default ile devam edeceğiz.
+  } catch (error) {
+    if (error?.statusCode) {
+      throw error;
+    }
   }
 
-  return cachedModel;
+  if (!isEmbeddingModel(DEFAULT_MODEL)) {
+    cachedModel = DEFAULT_MODEL;
+    return cachedModel;
+  }
+
+  const err = new Error(
+    "Ollama'da generate destekli bir sohbet modeli bulunamadı. `llama3:latest` gibi bir model kurup `OLLAMA_MODEL` değişkenini ona ayarlayın.",
+  );
+  err.statusCode = 503;
+  throw err;
 }
 
 function buildPrompt({ message, user }) {

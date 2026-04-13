@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useProfile } from "@/hooks/useProfile";
+import { clearAllChatMessages } from "@/hooks/useChatMessages";
 
 export default function StudentLayout({
   children,
@@ -36,7 +37,8 @@ export default function StudentLayout({
           }, 1000);
           return;
         }
-      } catch (error) {
+      } catch {
+        clearAllChatMessages();
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         router.push("/");
@@ -60,6 +62,7 @@ export default function StudentLayout({
         console.error("Auth check failed:", error);
         toast.error("Oturum süreniz doldu, lütfen tekrar giriş yapın.");
 
+        clearAllChatMessages();
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         router.push("/");
@@ -67,24 +70,17 @@ export default function StudentLayout({
     };
 
     checkAuth();
-  }, [router, pathname]);
+  }, [router, pathname, API_URL]);
 
   const handleLogout = () => {
+    clearAllChatMessages();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     toast.success("Çıkış yapıldı");
     router.push("/");
   };
 
-  const NavLink = ({
-    href,
-    icon,
-    label,
-  }: {
-    href: string;
-    icon: string;
-    label: string;
-  }) => {
+  const NavLink = ({ href, label }: { href: string; label: string }) => {
     const isActive =
       href === "/student" ? pathname === href : pathname.startsWith(href);
 
@@ -141,12 +137,12 @@ export default function StudentLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
-          <NavLink href="/student" icon="" label="Anasayfa" />
-          <NavLink href="/student/profile" icon="" label="Profil" />
-          <NavLink href="/student/courses" icon="" label="Dersler" />
-          <NavLink href="/student/exam" icon="" label="Sınavlar" />
-          <NavLink href="/student/grades" icon="" label="Notlar" />
-          <NavLink href="/student/chatbot" icon="" label="ChatBot" />
+          <NavLink href="/student" label="Anasayfa" />
+          <NavLink href="/student/profile" label="Profil" />
+          <NavLink href="/student/courses" label="Dersler" />
+          <NavLink href="/student/exam" label="Sınavlar" />
+          <NavLink href="/student/grades" label="Notlar" />
+          <NavLink href="/student/chatbot" label="ChatBot" />
         </nav>
 
         <button

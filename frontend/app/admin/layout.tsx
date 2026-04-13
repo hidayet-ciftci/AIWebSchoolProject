@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useProfile } from "@/hooks/useProfile";
+import { clearAllChatMessages } from "@/hooks/useChatMessages";
 
 export default function AdminLayout({
   children,
@@ -43,7 +44,8 @@ export default function AdminLayout({
 
         if (!res.ok) throw new Error("Token geçersiz");
         setIsAuthorized(true);
-      } catch (error) {
+      } catch {
+        clearAllChatMessages();
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         router.push("/");
@@ -51,24 +53,17 @@ export default function AdminLayout({
     };
 
     checkAuth();
-  }, [router, pathname]);
+  }, [router, pathname, API_URL]);
 
   const handleLogout = () => {
+    clearAllChatMessages();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     toast.success("Çıkış yapıldı");
     router.push("/");
   };
 
-  const NavLink = ({
-    href,
-    icon,
-    label,
-  }: {
-    href: string;
-    icon: string;
-    label: string;
-  }) => {
+  const NavLink = ({ href, label }: { href: string; label: string }) => {
     const isActive =
       href === "/admin" ? pathname === href : pathname.startsWith(href);
     return (
@@ -117,11 +112,11 @@ export default function AdminLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
-          <NavLink href="/admin" icon="" label="Anasayfa" />
-          <NavLink href="/admin/profile" icon="" label="Profil" />
-          <NavLink href="/admin/courses" icon="" label="Ders Yönetimi" />
-          <NavLink href="/admin/register" icon="" label="Kullanıcı Ekle" />
-          <NavLink href="/admin/chatbot" icon="" label="ChatBot" />
+          <NavLink href="/admin" label="Anasayfa" />
+          <NavLink href="/admin/profile" label="Profil" />
+          <NavLink href="/admin/courses" label="Ders Yönetimi" />
+          <NavLink href="/admin/register" label="Kullanıcı Ekle" />
+          <NavLink href="/admin/chatbot" label="ChatBot" />
         </nav>
 
         <button

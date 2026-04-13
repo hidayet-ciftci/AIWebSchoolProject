@@ -7,6 +7,7 @@ Bu doküman, **AI school web app** projesinde yapılan **Ollama (local)** entegr
 - **Frontend**: Next.js (student/teacher/admin panellerinde ChatBot sayfaları var)
 - **Backend**: Express + MongoDB
 - **LLM**: Ollama, local olarak `http://localhost:11434` üzerinde çalışıyor
+- **Aktif mod**: Sadece düz chatbot aktif. Bu aşamada **RAG / embedding / retrieval** kullanılmıyor.
 
 ## Yapılanlar (Özet)
 
@@ -15,7 +16,7 @@ Bu doküman, **AI school web app** projesinde yapılan **Ollama (local)** entegr
 - **LLM servisi eklendi**
   - Dosya: `backend/src/services/llmService.js`
   - Ollama endpoint: `POST http://localhost:11434/api/generate`
-  - Model: varsayılan `llama3`, yoksa `/api/tags` üzerinden mevcut ilk modele düşer
+  - Model: varsayılan `llama3`, yoksa `/api/tags` üzerinden sadece **generate destekli** uygun sohbet modeline düşer
   - **Türkçe zorlaması**: prompt içine güçlü sistem talimatı eklendi:
     - `"Her zaman Türkçe cevap ver. Açıklayıcı ve öğretici bir dil kullan."` (ve benzeri güçlendirilmiş metin)
   - **Hata yönetimi**: timeout / bağlantı hatası / Ollama error mesajları anlamlı şekilde ele alınıyor

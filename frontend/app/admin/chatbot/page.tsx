@@ -3,17 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { clearAllChatMessages, useChatMessages } from "@/hooks/useChatMessages";
 
 export default function AdminChatbotPage() {
   const router = useRouter();
-  const [messages, setMessages] = useState<
-    { role: "user" | "ai"; text: string }[]
-  >([
-    {
-      role: "ai",
-      text: "Merhaba! Ben AI yönetim asistanınızım. Kullanıcılar, dersler, sınavlar ve raporlamalar konusunda yardımcı olabilirim.",
-    },
-  ]);
+  const initialAiMessage =
+    "Merhaba! Ben AI yönetim asistanınızım. Kullanıcılar, dersler, sınavlar ve raporlamalar konusunda yardımcı olabilirim.";
+  const { messages, setMessages } = useChatMessages("admin", initialAiMessage);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -23,18 +19,26 @@ export default function AdminChatbotPage() {
     if (!token) router.push("/");
   }, [router]);
 
+  const handleClearChat = () => {
+    setMessages([{ role: "ai", text: initialAiMessage }]);
+    toast.success("Sohbet geçmişi silindi.");
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || isSending) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
+      clearAllChatMessages();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       toast.error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
       router.push("/");
       return;
     }
 
-    const userMessage = inputText;
+    const userMessage = inputText.trim();
     setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
     setInputText("");
 
@@ -50,6 +54,16 @@ export default function AdminChatbotPage() {
       });
 
       const data = await res.json().catch(() => null);
+
+      if (res.status === 401) {
+        clearAllChatMessages();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        toast.error("Oturum süreniz doldu. Lütfen tekrar giriş yapın.");
+        router.push("/");
+        return;
+      }
+
       if (!res.ok) {
         const msg =
           (data && (data.message || data.error)) ||
@@ -60,11 +74,16 @@ export default function AdminChatbotPage() {
       const reply = typeof data?.reply === "string" ? data.reply : "";
       setMessages((prev) => [
         ...prev,
-        { role: "ai", text: reply || "Şu an yanıt üretemedim, tekrar dener misin?" },
+        {
+          role: "ai",
+          text: reply || "Şu an yanıt üretemedim, tekrar dener misin?",
+        },
       ]);
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Beklenmedik bir hata oluştu.");
+      toast.error(
+        err instanceof Error ? err.message : "Beklenmedik bir hata oluştu.",
+      );
     } finally {
       setIsSending(false);
     }
@@ -86,6 +105,14 @@ export default function AdminChatbotPage() {
               Yönetim kararlarınızda size yardımcı olacağım!
             </p>
           </div>
+          <button
+            type="button"
+            onClick={handleClearChat}
+            disabled={isSending}
+            className="ml-auto px-4 py-2 border border-red-200 text-red-500 rounded-lg font-semibold hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-60"
+          >
+            Sohbeti Sil
+          </button>
         </div>
 
         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-[#f7fafc]">
@@ -138,4 +165,3 @@ export default function AdminChatbotPage() {
     </div>
   );
 }
-

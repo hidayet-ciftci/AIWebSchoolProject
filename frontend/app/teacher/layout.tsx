@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useProfile } from "@/hooks/useProfile";
+import { clearAllChatMessages } from "@/hooks/useChatMessages";
 
 export default function TeacherLayout({
   children,
@@ -37,8 +38,10 @@ export default function TeacherLayout({
           }, 1000);
           return;
         }
-      } catch (error) {
-        localStorage.clear();
+      } catch {
+        clearAllChatMessages();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
         router.push("/");
         return;
       }
@@ -60,6 +63,7 @@ export default function TeacherLayout({
         console.error("Auth failed:", error);
         toast.error("Oturum süreniz doldu.");
 
+        clearAllChatMessages();
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         router.push("/");
@@ -67,24 +71,17 @@ export default function TeacherLayout({
     };
 
     checkAuth();
-  }, [router, pathname]);
+  }, [router, pathname, API_URL]);
 
   const handleLogout = () => {
+    clearAllChatMessages();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     toast.success("Çıkış yapıldı");
     router.push("/");
   };
 
-  const NavLink = ({
-    href,
-    icon,
-    label,
-  }: {
-    href: string;
-    icon: string;
-    label: string;
-  }) => {
+  const NavLink = ({ href, label }: { href: string; label: string }) => {
     const isActive =
       href === "/teacher" ? pathname === href : pathname.startsWith(href);
 
