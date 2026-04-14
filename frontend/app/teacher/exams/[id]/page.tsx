@@ -272,6 +272,7 @@ export default function ExamDetailPage() {
 
   return (
     <div className="animate-fadeIn p-6 max-w-6xl mx-auto space-y-8">
+      {/* HEADER */}
       <div className="flex justify-between items-center border-b pb-4 bg-white p-4 rounded-xl shadow-sm">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
@@ -309,6 +310,7 @@ export default function ExamDetailPage() {
             Kaydet
           </button>
 
+          {/* YAYINLA / YAYINDAN KALDIR BUTONLARI */}
           {!exam.isPublished ? (
             <button
               onClick={handlePublish}
@@ -327,6 +329,7 @@ export default function ExamDetailPage() {
         </div>
       </div>
 
+      {/* GENEL AYARLAR */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <h3 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">
           Genel Sınav Ayarları
@@ -408,6 +411,7 @@ export default function ExamDetailPage() {
         </div>
       </div>
 
+      {/* SORU ALANI (Sol: Form, Sağ: Liste) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit sticky top-6">
           <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2 flex justify-between items-center">
