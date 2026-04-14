@@ -1,121 +1,161 @@
 # RAG Implementation Worklog
 
-Bu dosya, projedeki local RAG entegrasyonunun ilerleme kaydıdır. Amaç; neyin tamamlandığını, sırada ne olduğunu ve sistemi tekrar açtığımda nereden devam etmem gerektiğini net görmek.
+Bu doküman, projedeki RAG altyapısının ne durumda olduğunu, neleri tamamladığımızı, sırada hangi işlerin bulunduğunu ve sistemin pratikte nasıl çalıştığını hızlıca görmek için hazırlanmıştır.
 
-## Hedef
+---
 
-- Öğretmen materyal yükler
-- Dosya local olarak uploads içinde saklanır
-- Arka planda queue ile işlenir
-- Embeddingler local çalışan Chroma içinde tutulur
-- Chat sırasında sadece ilgili ders materyalinden context alınır
-- Uygun context yoksa mevcut chatbot fallback çalışır
+## Amaç
 
-## Mimari Kararlar
+Hedeflenen akış şu şekildedir:
+
+- öğretmen ders materyali yükler,
+- dosya sunucuda saklanır,
+- içerik arka planda işlenir,
+- metin chunk'lara ayrılır,
+- embedding'ler üretilir,
+- vektörler ChromaDB'ye kaydedilir,
+- öğrenci o ders için soru sorduğunda yalnızca ilgili materyallerden context alınır,
+- uygun bağlam yoksa sistem genel chatbot akışına döner.
+
+---
+
+## Kullanılan Teknolojiler
 
 - Backend: Express
 - Frontend: Next.js
-- LLM: Ollama chat modeli
-- Embedding: Ollama embedding modeli
-- Queue: BullMQ + Redis
-- Vector store: Local Chroma
-- Scope: İlk sürümde sadece PDF, DOCX, TXT
+- Veritabanı: MongoDB
+- Chat modeli: Ollama
+- Embedding modeli: Ollama embedding endpoint'i
+- Vector store: ChromaDB
+- Queue: BullMQ + Redis veya local async fallback
 
-## Tamamlananlar
+---
 
-- [x] Plain chatbot stabil hale getirildi
-- [x] Sohbet geçmişi localStorage ile kalıcı yapıldı
-- [x] Sohbeti sil butonu eklendi
-- [x] RAG için backend bağımlılıkları kuruldu
-- [x] Queue altyapısı için temel dosyalar oluşturuldu
-- [x] Document parser, chunker, Chroma ve retrieval servis iskeleti oluşturuldu
-- [x] Worker süreci eklendi
-- [x] Windows geliştirme ortamı için yerel async queue fallback bağlandı
-- [x] Chroma + embedding + retrieval smoke testi başarıyla geçti
-- [x] pdf-parse v2 uyumluluğu düzeltildi ve gerçek PDF extract testi doğrulandı
+## Tamamlanan İşler
 
-## Şu Anki Durum
+Aşağıdaki başlıklar aktif olarak tamamlanmış durumdadır:
 
-Aktif faz: gerçek ders verisiyle uygulama testi
+- [x] Temel chatbot entegrasyonu kuruldu
+- [x] Student, teacher ve admin chatbot sayfaları backend'e bağlandı
+- [x] Sohbet geçmişi localStorage ile korunur hale getirildi
+- [x] Ders materyali yükleme akışı eklendi
+- [x] PDF, DOCX ve TXT parsing altyapısı hazırlandı
+- [x] Metni chunk'lara bölen servis eklendi
+- [x] Embedding üretimi Ollama ile bağlandı
+- [x] ChromaDB'ye yazma ve sorgulama servisi eklendi
+- [x] Course bazlı retrieval mantığı kuruldu
+- [x] Materyal durum alanları eklendi: pending, processing, ready, failed
+- [x] Windows ortamı için local queue fallback aktif hale getirildi
+- [x] PDF parse uyumluluk sorunu giderildi
+- [x] RAG isteklerinde timeout azaltımı için süre ve context sınırları iyileştirildi
 
-Bu fazda amaç:
+---
 
-- upload akışını queue ile bağlamak
-- chat endpointini RAG + fallback yapısına geçirmek
-- materyal durum alanlarını modele eklemek
-- local servislerin env ayarlarını tamamlamak
+## Güncel Durum
 
-## Sıradaki İşler
+RAG altyapısı uygulamaya entegre edilmiştir ve temel uçtan uca akış çalışmaktadır. Şu an sistemin davranışı şöyledir:
 
-1. Upload sonrası gerçek materyal ingest testini yap
-2. Chat içinde gerçek course bazlı retrieval sonucunu doğrula
-3. İstenirse QUEUE_PROVIDER=bullmq moduna geçmek için tam Redis 5+ uyumlu servis bağla
-4. Kaynak gösterimi ve daha iyi relevance ayarı ekle
+- ders seçilmeden sorulan sorular genel chatbot üzerinden cevaplanır,
+- ders seçilip materyal hazır durumdaysa retrieval devreye girer,
+- yeterli bağlam bulunamazsa fallback cevap mekanizması çalışır.
+
+Bu makinede en güvenilir geliştirme ayarı:
+
+- `QUEUE_PROVIDER=local`
+
+Bu sayede materyal yükleme sonrası ingestion işlemi arka planda devam eder ve ayrı worker zorunlu olmaz. Daha sonra Redis tabanlı tam kuyruk sistemi istenirse `bullmq` moduna geçilebilir.
+
+---
+
+## Sistem Akışı
+
+### 1. Upload akışı
+
+- öğretmen dosya yükler,
+- dosya ilgili ders materyaline eklenir,
+- başlangıç durumu `pending` olur,
+- ingestion işlemi başlatılır,
+- sistem dosyadan metni çıkarır,
+- metin chunk'lara ayrılır,
+- embedding üretilir,
+- ChromaDB içine yazılır,
+- başarıyla biterse materyal durumu `ready` yapılır.
+
+### 2. Soru-cevap akışı
+
+- kullanıcı bir ders seçer,
+- soru backend'e gönderilir,
+- sistem önce erişim kontrolü yapar,
+- soru embedding'e çevrilir,
+- ChromaDB içinde o derse ait en alakalı chunk'lar aranır,
+- sonuç varsa prompt bağlamı bu içeriklerle oluşturulur,
+- Ollama cevap üretir,
+- sonuç kullanıcıya Türkçe ve kısa/öğretici biçimde döner.
+
+---
 
 ## Önemli Dosyalar
 
-- backend/src/controllers/courseController.js
-- backend/src/routes/chat.js
-- backend/src/models/Course.js
-- backend/src/middlewares/upload.js
-- backend/src/queue/ragIngestionQueue.js
-- backend/src/services/rag/documentParser.js
-- backend/src/services/rag/textChunker.js
-- backend/src/services/rag/chromaService.js
-- backend/src/services/rag/ragService.js
-- backend/src/workers/ragWorker.js
+- `backend/src/controllers/courseController.js`
+- `backend/src/routes/chat.js`
+- `backend/src/services/llmService.js`
+- `backend/src/services/rag/documentParser.js`
+- `backend/src/services/rag/textChunker.js`
+- `backend/src/services/rag/chromaService.js`
+- `backend/src/services/rag/ragService.js`
+- `backend/src/services/rag/ingestionProcessor.js`
+- `backend/src/queue/ragIngestionQueue.js`
+- `backend/src/workers/ragWorker.js`
 
-## Env Notları
-
-Backend tarafında gerekli olması beklenen değişkenler:
-
-- OLLAMA_BASE_URL
-- OLLAMA_MODEL
-- OLLAMA_EMBED_MODEL
-- REDIS_HOST / REDIS_PORT veya REDIS_URL
-- CHROMA_URL veya CHROMA_HOST / CHROMA_PORT
-- CHROMA_COLLECTION
-- RAG_TOP_K
-- RAG_MAX_DISTANCE
-- RAG_CHUNK_SIZE
-- RAG_CHUNK_OVERLAP
+---
 
 ## Çalıştırma Notları
 
-Beklenen yerel servisler:
+RAG akışının çalışması için genelde aşağıdakiler yeterlidir:
 
-1. Redis veya yerel async queue fallback hazır olacak
-2. Chroma local erişilebilir olacak
-3. Ollama açık olacak
-4. Backend ayrı çalışacak
-5. Eğer QUEUE_PROVIDER=bullmq ise worker ayrı process olarak çalışacak
+1. MongoDB açık olmalı
+2. Ollama açık olmalı
+3. ChromaDB erişilebilir olmalı
+4. Backend çalışmalı
+5. Frontend çalışmalı
+6. Eğer `QUEUE_PROVIDER=bullmq` ise worker ayrıca başlatılmalı
 
-Örnek süreç:
+Yerel geliştirme için tipik akış:
 
-- backend server başlat
-- gerekiyorsa worker başlat
-- dosya yükle
-- materyal durumunu kontrol et
-- course bazlı soru sor
+- backend'i başlat,
+- frontend'i başlat,
+- materyal yükle,
+- materyalin `ready` olmasını bekle,
+- ilgili dersi seçerek soru sor.
 
-Not: Bu makinede şu anda QUEUE_PROVIDER=local aktif. Bu sayede upload sonrası işlem yine asenkron başlar ama ayrı BullMQ worker zorunlu değildir. Daha sonra tam Redis 5+ ortamı hazır olduğunda QUEUE_PROVIDER=bullmq yapılarak doğrudan o moda geçilebilir.
+---
 
-## Son Doğrulama Notu
+## Sıradaki İşler
 
-- Yerel asenkron enqueue -> embedding -> Chroma query -> cleanup zinciri test edildi ve başarılı sonuç verdi.
-- Bu makinede şu an güvenilir mod olarak QUEUE_PROVIDER=local kullanılmaktadır.
-- Chroma local olarak çalışıyor ve retrieval sonuç döndürüyor.
-- PDF upload tarafındaki "pdfParse is not a function" hatası giderildi; parser, yeni pdf-parse API yapısına göre doğrulandı.
+Öncelikli geliştirme adımları şunlardır:
+
+1. gerçek kullanıcı senaryolarıyla daha fazla doğrulama yapmak,
+2. kaynak gösterimi eklemek,
+3. relevance ve top-k ayarlarını daha akıllı hale getirmek,
+4. sohbet geçmişini RAG ile birlikte daha iyi yönetmek,
+5. büyük materyallerde cevap kalitesini artırmak,
+6. üretim ortamı için servis başlatma süreçlerini netleştirmek.
+
+---
 
 ## Başarı Kriterleri
 
-- Upload isteği hızlı dönüyor mu
-- Queue job oluşuyor mu
-- Worker materyali ready yapıyor mu
-- Chroma sonuç döndürüyor mu
-- Alakasız sorguda fallback chat çalışıyor mu
-- Silinen materyal retrieval sonuçlarından çıkıyor mu
+RAG akışının başarılı kabul edilmesi için şu maddeler kontrol edilir:
+
+- upload isteği hızlı cevap dönüyor mu,
+- materyal statüsü doğru güncelleniyor mu,
+- chunk üretimi yapılıyor mu,
+- Chroma sorgusu sonuç veriyor mu,
+- ilgili sorularda materyal bazlı cevap dönüyor mu,
+- alakasız sorularda fallback doğru çalışıyor mu.
+
+---
 
 ## Not
 
-İlk sürüm sade tutulacak. OCR, görsel anlama ve taranmış PDF desteği sonraki faza bırakılacak.
+İlk sürüm bilinçli olarak sade tutulmuştur. OCR, görüntü analizi, taranmış PDF desteği ve daha gelişmiş kaynak gösterimi sonraki fazlara bırakılmıştır.
