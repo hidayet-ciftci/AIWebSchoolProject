@@ -1,4 +1,3 @@
-// frontend/app/teacher/courses/[id]/page.tsx
 "use client";
 import { useState, useEffect, use, useCallback } from "react";
 
@@ -19,7 +18,6 @@ export default function CourseDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // params promise olduğu için unwrap yapıyoruz
   const { id } = use(params);
 
   const [course, setCourse] = useState<CourseDetail | null>(null);
@@ -50,7 +48,6 @@ export default function CourseDetailPage({
     }
   };
 
-  // Ders verilerini çek
   const fetchCourse = useCallback(async () => {
     const token = localStorage.getItem("token");
     const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
@@ -66,7 +63,6 @@ export default function CourseDetailPage({
     });
   }, [fetchCourse]);
 
-  // Dosya Yükleme Fonksiyonu
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
@@ -106,7 +102,6 @@ export default function CourseDetailPage({
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-4">{course.name} - Detaylar</h1>
 
-      {/* Dosya Yükleme Formu */}
       <div className="bg-white p-6 rounded-xl shadow mb-6">
         <h2 className="text-xl font-semibold mb-4">Yeni Materyal Ekle</h2>
         <form onSubmit={handleUpload} className="flex gap-4 items-center">
@@ -128,7 +123,6 @@ export default function CourseDetailPage({
         </p>
       </div>
 
-      {/* Yüklü Dosyalar Listesi */}
       <div className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-xl font-semibold mb-4">Ders Materyalleri</h2>
         {course.materials?.length === 0 ? (

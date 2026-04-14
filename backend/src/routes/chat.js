@@ -5,9 +5,6 @@ const { getRagContext } = require("../services/rag/ragService");
 
 const router = express.Router();
 
-// POST /chat
-// Body: { "message": "string" }
-// Response: { "reply": "string" }
 router.post("/", verifyToken, async (req, res, next) => {
   try {
     const message =

@@ -1,6 +1,6 @@
 "use client";
 
-import { UserProfile } from "@/types"; // Tipi buradan import ettik
+import { UserProfile } from "@/types";
 
 export default function ProfileCard({ data }: { data: UserProfile }) {
   return (
@@ -9,7 +9,6 @@ export default function ProfileCard({ data }: { data: UserProfile }) {
         Kişisel Bilgiler
       </h2>
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Ortak Alanlar */}
         <InfoItem label="Ad" value={data.name} />
         <InfoItem label="Soyad" value={data.surname} />
         <InfoItem label="Yaş" value={data.age} />
@@ -18,7 +17,6 @@ export default function ProfileCard({ data }: { data: UserProfile }) {
           value={data.gender === "male" ? "Erkek" : "Kadın"}
         />
 
-        {/* Rol Bazlı Farklılaşan Alanlar */}
         {data.role === "student" && (
           <InfoItem label="Öğrenci No" value={data.studentNo} />
         )}
@@ -33,13 +31,12 @@ export default function ProfileCard({ data }: { data: UserProfile }) {
   );
 }
 
-// Yardımcı bileşen aynı kalabilir
 function InfoItem({
   label,
   value,
 }: {
   label: string;
-  value: string | number | undefined;
+  value: string | number | null | undefined;
 }) {
   return (
     <div>
@@ -47,7 +44,7 @@ function InfoItem({
         {label}
       </label>
       <p className="text-base text-[#1a202c] p-3 bg-[#f7fafc] rounded-lg">
-        {value}
+        {value ?? "-"}
       </p>
     </div>
   );

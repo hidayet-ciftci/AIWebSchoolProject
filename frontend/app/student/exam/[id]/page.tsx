@@ -222,7 +222,6 @@ export default function TakeExamPage() {
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
-      {/* Üst Bilgi Çubuğu */}
       <div className="sticky top-0 z-10 bg-white shadow-md p-4 rounded-b-xl flex justify-between items-center mb-6 border-t-4 border-blue-600">
         <div>
           <h1 className="text-xl font-bold text-gray-800">{exam?.title}</h1>
@@ -239,7 +238,6 @@ export default function TakeExamPage() {
         </div>
       </div>
 
-      {/* Sorular Alanı */}
       <div className="space-y-6">
         {exam?.questions.map((q, index) => (
           <div
@@ -259,7 +257,6 @@ export default function TakeExamPage() {
               {q.questionText}
             </p>
 
-            {/* Soru Tipine Göre Input */}
             {q.questionType === "multiple_choice" ? (
               <div className="space-y-3">
                 {q.options?.map((option, optIndex) => (
@@ -298,7 +295,6 @@ export default function TakeExamPage() {
         ))}
       </div>
 
-      {/* Sınavı Bitir Butonu */}
       <div className="mt-8 flex justify-end">
         <button
           onClick={() => handleFinishExam(false)}

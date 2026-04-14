@@ -33,13 +33,10 @@ export default function CreateUserPage() {
     }
 
     try {
-      // Backend'deki register endpoint'i kullanılır
       const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Admin token'ı gerekebilir, backend'e göre değişir ama genelde eklenir:
-          // "Authorization": `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(formData),
       });
@@ -49,11 +46,10 @@ export default function CreateUserPage() {
 
       toast.success(
         `Yeni ${
-          formData.role === "teacher" ? "Öğretmen" : "Öğrenci"
-        } başarıyla oluşturuldu!`
+          formData.role === "teacher" ? "��xretmen" : "��xrenci"
+        } ba�xarıyla olu�xturuldu!`
       );
 
-      // Formu temizle
       setFormData({
         name: "",
         surname: "",
@@ -64,7 +60,7 @@ export default function CreateUserPage() {
         role: "student",
       });
     } catch (error: any) {
-      toast.error(error.message || "Kayıt işlemi başarısız");
+      toast.error(error.message || "Kayıt i�xlemi ba�xarısız");
     }
   };
 
@@ -76,14 +72,13 @@ export default function CreateUserPage() {
             Yeni Kullanıcı Ekle
           </h1>
           <p className="text-gray-500">
-            Sisteme yeni Öğrenci, Öğretmen veya Admin kaydedin.
+            Sisteme yeni ��xrenci, ��xretmen veya Admin kaydedin.
           </p>
         </div>
       </div>
 
       <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Ad Soyad */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-2">
@@ -94,7 +89,7 @@ export default function CreateUserPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Örn: Ahmet"
+                placeholder="�rn: Ahmet"
                 className="w-full p-3 border rounded-lg outline-none focus:border-[#667eea] transition-colors"
               />
             </div>
@@ -107,17 +102,16 @@ export default function CreateUserPage() {
                 name="surname"
                 value={formData.surname}
                 onChange={handleChange}
-                placeholder="Örn: Yılmaz"
+                placeholder="�rn: Yılmaz"
                 className="w-full p-3 border rounded-lg outline-none focus:border-[#667eea] transition-colors"
               />
             </div>
           </div>
 
-          {/* Yaş Cinsiyet */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-2">
-                Yaş
+                Ya�x
               </label>
               <input
                 required
@@ -146,7 +140,6 @@ export default function CreateUserPage() {
             </div>
           </div>
 
-          {/* ROL SEÇİMİ - En Kritik Kısım */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <label className="block text-sm font-bold text-blue-800 mb-2">
               Kullanıcı Rolü
@@ -161,7 +154,7 @@ export default function CreateUserPage() {
                   onChange={handleChange}
                   className="w-4 h-4 text-[#667eea]"
                 />
-                <span className="text-gray-700">Öğrenci</span>
+                <span className="text-gray-700">��xrenci</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -172,12 +165,11 @@ export default function CreateUserPage() {
                   onChange={handleChange}
                   className="w-4 h-4 text-[#667eea]"
                 />
-                <span className="text-gray-700">Öğretmen</span>
+                <span className="text-gray-700">��xretmen</span>
               </label>
             </div>
           </div>
 
-          {/* Giriş Bilgileri */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-2">

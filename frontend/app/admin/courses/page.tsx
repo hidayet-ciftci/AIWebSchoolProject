@@ -14,10 +14,10 @@ interface UserProfile {
 interface Course {
   _id: string;
   name: string;
-  courseCode: string; // YENİ
+  courseCode: string;
   teacher: UserProfile | null;
   students: UserProfile[];
-  lessonNumber: number; // YENİ
+  lessonNumber: number;
   status: string;
 }
 
@@ -33,7 +33,7 @@ export default function AdminCoursesPage() {
       setCourses(data);
     } catch (error) {
       console.error("Hata:", error);
-      alert("Dersler yüklenirken bir hata oluştu.");
+      alert("Dersler yüklenirken bir hata olu�xtu.");
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export default function AdminCoursesPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Bu dersi silmek istediğinize emin misiniz?")) return;
+    if (!window.confirm("Bu dersi silmek istedi�xinize emin misiniz?")) return;
 
     try {
       const res = await fetch(
@@ -55,10 +55,10 @@ export default function AdminCoursesPage() {
       );
 
       if (res.ok) {
-        alert("Ders başarıyla silindi");
+        alert("Ders ba�xarıyla silindi");
         setCourses((prev) => prev.filter((course) => course._id !== id));
       } else {
-        alert("Silme işlemi başarısız oldu.");
+        alert("Silme i�xlemi ba�xarısız oldu.");
       }
     } catch (error) {
       console.error("Silme hatası:", error);
@@ -73,7 +73,7 @@ export default function AdminCoursesPage() {
         <div>
           <h1 className="text-3xl font-bold text-[#1a202c]">Ders Yönetimi</h1>
           <p className="text-gray-500 mt-1">
-            Dersleri, öğretmenleri ve öğrencileri tek yerden yönetin.
+            Dersleri, ö�xretmenleri ve ö�xrencileri tek yerden yönetin.
           </p>
         </div>
 
@@ -98,7 +98,6 @@ export default function AdminCoursesPage() {
                 <h3 className="text-xl font-bold text-[#1a202c]">
                   {course.name}
                 </h3>
-                {/* Ders Kodu Gösterimi */}
                 <span className="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2 py-1 rounded-md mt-1 inline-block">
                   {course.courseCode || "KOD YOK"}
                 </span>
@@ -115,7 +114,7 @@ export default function AdminCoursesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-medium uppercase">
-                    Öğretmen
+                    ��xretmen
                   </p>
                   <p className="text-sm font-semibold text-gray-800">
                     {course.teacher
@@ -126,14 +125,13 @@ export default function AdminCoursesPage() {
               </div>
 
               <div className="flex items-center justify-between pr-2">
-                {/* Öğrenci Sayısı */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
                     {course.students?.length || 0}
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 font-medium uppercase">
-                      Öğrenci
+                      ��xrenci
                     </p>
                     <p className="text-sm font-semibold text-gray-800">
                       {course.students?.length} Kayıtlı
@@ -141,7 +139,6 @@ export default function AdminCoursesPage() {
                   </div>
                 </div>
 
-                {/* Ders Sayısı Gösterimi */}
                 <div className="text-right">
                   <p className="text-xs text-gray-500 font-medium uppercase">
                     Ders Sayısı

@@ -112,7 +112,6 @@ export default function TeacherGradesPage() {
         </div>
       ) : (
         <>
-          {/* Ders Seçimi */}
           <div className="mb-6">
             <label className="block text-sm font-semibold mb-2 text-gray-700">
               Ders Seçin
@@ -132,7 +131,6 @@ export default function TeacherGradesPage() {
 
           {selectedCourseData && (
             <>
-              {/* Stats Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {examTypes.map((type) => (
                   <div
@@ -157,13 +155,12 @@ export default function TeacherGradesPage() {
                 </div>
               </div>
 
-              {/* Table */}
               <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-[#f7fafc] text-gray-600 font-semibold border-b border-gray-200">
                       <tr>
-                        <th className="p-4">Öğrenci</th>
+                        <th className="p-4">��xrenci</th>
                         {examTypes.map((type) => (
                           <th key={type} className="p-4">
                             {getExamTypeLabel(type)}
@@ -179,7 +176,7 @@ export default function TeacherGradesPage() {
                             colSpan={examTypes.length + 2}
                             className="p-8 text-center text-gray-500"
                           >
-                            Bu derste henüz öğrenci bulunmamaktadır.
+                            Bu derste henüz ö�xrenci bulunmamaktadır.
                           </td>
                         </tr>
                       ) : (

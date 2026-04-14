@@ -47,7 +47,6 @@ export default function StudentCourseDetailPage({
 
   return (
     <div className="animate-fadeIn p-6">
-      {/* Geri Dön Butonu */}
       <Link
         href="/student/courses"
         className="text-gray-500 hover:text-gray-700 mb-4 inline-block"
@@ -55,7 +54,6 @@ export default function StudentCourseDetailPage({
         ← Derslere Dön
       </Link>
 
-      {/* Başlık Alanı */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
         <h1 className="text-3xl font-bold text-[#1a202c] mb-2">
           {course.name}
@@ -73,7 +71,6 @@ export default function StudentCourseDetailPage({
         </p>
       </div>
 
-      {/* Ders Materyalleri Listesi */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h2 className="text-xl font-bold text-[#1a202c] mb-4 flex items-center gap-2">
           📁 Ders Materyalleri ve Notlar
@@ -97,7 +94,6 @@ export default function StudentCourseDetailPage({
                   </div>
                 </div>
 
-                {/* Dosyayı Görüntüle/İndir Butonu */}
                 <a
                   href={`http://localhost:5000${mat.fileUrl}`}
                   target="_blank"

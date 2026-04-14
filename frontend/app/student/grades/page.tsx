@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 interface Grade {
   _id: string | null;
-  score: number | null; // null ise girilmemiş, "G" gösterilecek
+  score: number | null;
   correctCount: number;
   wrongCount: number;
   submittedAt: string | null;
@@ -113,7 +113,7 @@ export default function GradesPage() {
       courseData.exams.push({
         examTitle: grade.exam.title,
         examType: grade.exam.examType,
-        score: examScore, // null ise 0
+        score: examScore,
         weight: grade.exam.weight,
         date: grade.exam.date,
         isGraded: grade.score !== null,
@@ -174,7 +174,6 @@ export default function GradesPage() {
               key={course.courseId}
               className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
             >
-              {/* Ders Başlığı ve Ortalama */}
               <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
                 <div>
                   <h3 className="text-xl font-bold text-[#1a202c]">
@@ -184,7 +183,7 @@ export default function GradesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-600 font-semibold">
-                    Ağırlıklı Ortalama
+                    A�xırlıklı Ortalama
                   </p>
                   <span className="text-3xl font-bold text-[#667eea]">
                     {course.weightedAverage.toFixed(2)}
@@ -192,7 +191,6 @@ export default function GradesPage() {
                 </div>
               </div>
 
-              {/* Sınav Listesi */}
               <div className="space-y-3">
                 {course.exams.map((exam, index) => (
                   <div
@@ -218,7 +216,7 @@ export default function GradesPage() {
                           {exam.isGraded ? exam.score : "G"}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Ağırlık: %{exam.weight}
+                          A�xırlık: %{exam.weight}
                         </p>
                         {!exam.isGraded && (
                           <p className="text-xs text-red-500 italic">
@@ -231,7 +229,6 @@ export default function GradesPage() {
                 ))}
               </div>
 
-              {/* İlerleme Çubuğu */}
               <div className="mt-4">
                 <div className="w-full bg-[#f7fafc] rounded-full h-3 overflow-hidden">
                   <div

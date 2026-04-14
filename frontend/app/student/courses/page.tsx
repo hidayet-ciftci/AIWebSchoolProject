@@ -6,7 +6,6 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
 
   useEffect(() => {
-    // Backend'den öğrencinin derslerini çekiyoruz
     const fetchCourses = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -34,7 +33,7 @@ export default function CoursesPage() {
             key={course._id}
             className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:-translate-y-1 transition-transform duration-300"
           >
-            <div className="text-3xl mb-4">📚</div>
+            <div className="text-3xl mb-4">xa</div>
             <h3 className="text-xl font-bold text-[#1a202c] mb-2">
               {course.name}
             </h3>

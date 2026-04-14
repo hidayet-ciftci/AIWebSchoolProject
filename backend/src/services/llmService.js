@@ -77,14 +77,13 @@ async function fetchJson(url, options = {}, timeoutMs = GENERATE_TIMEOUT_MS) {
     if (!res.ok) {
       const message =
         (data && (data.error || data.message)) ||
-        `Ollama isteği başarısız: ${res.status}`;
-      // Ollama bazen model runner'ı bellek/uyumluluk yüzünden düşürdüğünde bu hatayı döner.
+        `Ollama iste�xi ba�xarısız: ${res.status}`;
       if (
         typeof message === "string" &&
         message.toLowerCase().includes("runner process has terminated")
       ) {
         const err = new Error(
-          "Ollama model süreci kapandı. Bu genellikle bellek (RAM/VRAM) yetersizliği veya model/runner sorunu nedeniyle olur. Daha küçük bir model deneyin veya Ollama'yı yeniden başlatıp tekrar deneyin.",
+          "Ollama model süreci kapandı. Bu genellikle bellek (RAM/VRAM) yetersizli�xi veya model/runner sorunu nedeniyle olur. Daha küçük bir model deneyin veya Ollama'yı yeniden ba�xlatıp tekrar deneyin.",
         );
         err.statusCode = 503;
         err.code = "OLLAMA_RUNNER_TERMINATED";
@@ -101,12 +100,11 @@ async function fetchJson(url, options = {}, timeoutMs = GENERATE_TIMEOUT_MS) {
     if (e?.name === "AbortError") {
       const seconds = Math.round(timeoutMs / 1000);
       const err = new Error(
-        `Ollama yanıt vermedi (${seconds}sn timeout). Ollama çalışıyor mu kontrol edin.`,
+        `Ollama yanıt vermedi (${seconds}sn timeout). Ollama çalı�xıyor mu kontrol edin.`,
       );
       err.statusCode = 504;
       throw err;
     }
-    // Bağlantı hataları (Ollama kapalı / erişilemiyor)
     const msg = String(e?.message || e);
     if (
       msg.includes("ECONNREFUSED") ||
@@ -114,7 +112,7 @@ async function fetchJson(url, options = {}, timeoutMs = GENERATE_TIMEOUT_MS) {
       msg.includes("Failed to fetch")
     ) {
       const err = new Error(
-        "Ollama'ya bağlanılamadı. `http://localhost:11434` erişilebilir mi?",
+        "Ollama'ya ba�xlanılamadı. `http://localhost:11434` eri�xilebilir mi?",
       );
       err.statusCode = 503;
       throw err;
@@ -170,7 +168,7 @@ async function resolveModel() {
   }
 
   const err = new Error(
-    "Ollama'da generate destekli bir sohbet modeli bulunamadı. `llama3:latest` gibi bir model kurup `OLLAMA_MODEL` değişkenini ona ayarlayın.",
+    "Ollama'da generate destekli bir sohbet modeli bulunamadı. `llama3:latest` gibi bir model kurup `OLLAMA_MODEL` de�xi�xkenini ona ayarlayın.",
   );
   err.statusCode = 503;
   throw err;
@@ -210,16 +208,16 @@ function buildPrompt({ message, user, contextChunks = [], courseName = "" }) {
   const limitedContextChunks = limitContextChunks(contextChunks);
   const hasContext = limitedContextChunks.length > 0;
   const systemPrompt = hasContext
-    ? "Her zaman Türkçe cevap ver. Açıklayıcı ama kısa bir dil kullan. Sadece verilen materyal bağlamına göre cevap ver. Eğer cevap bağlam içinde yoksa tam olarak 'Bu materyaller içinde buna dair bilgi bulamadım.' de. Tahmin yürütme, uydurma bilgi verme ve bağlam dışına çıkma. Mümkünse en fazla 5-6 cümle kullan."
-    : "Her zaman Türkçe cevap ver. Açıklayıcı ve öğretici bir dil kullan. Kısa, net ve uygulanabilir öneriler ver. Eğer kullanıcı eğitim/okul bağlamında soru soruyorsa örneklerle anlat. Yanıtında gereksiz İngilizce kullanma.";
+    ? "Her zaman Türkçe cevap ver. Açıklayıcı ama kısa bir dil kullan. Sadece verilen materyal ba�xlamına göre cevap ver. E�xer cevap ba�xlam içinde yoksa tam olarak 'Bu materyaller içinde buna dair bilgi bulamadım.' de. Tahmin yürütme, uydurma bilgi verme ve ba�xlam dı�xına çıkma. Mümkünse en fazla 5-6 cümle kullan."
+    : "Her zaman Türkçe cevap ver. Açıklayıcı ve ö�xretici bir dil kullan. Kısa, net ve uygulanabilir öneriler ver. E�xer kullanıcı e�xitim/okul ba�xlamında soru soruyorsa örneklerle anlat. Yanıtında gereksiz İngilizce kullanma.";
 
   const roleInfo =
     user?.role === "admin"
       ? "Kullanıcı rolü: Yönetici (admin)."
       : user?.role === "teacher"
-        ? "Kullanıcı rolü: Öğretmen."
+        ? "Kullanıcı rolü: ��xretmen."
         : user?.role === "student"
-          ? "Kullanıcı rolü: Öğrenci."
+          ? "Kullanıcı rolü: ��xrenci."
           : "Kullanıcı rolü: Bilinmiyor.";
 
   const nameInfo =
@@ -271,7 +269,6 @@ async function requestEmbeddings(cleanedTexts) {
       return data.embeddings;
     }
   } catch {
-    // Bazı Ollama sürümleri /api/embed yerine legacy embeddings endpointi kullanır.
   }
 
   const embeddings = [];
@@ -354,9 +351,6 @@ async function generateReply({
     },
   };
 
-  // Non-streaming basit kullanım
-  // Not: Ollama bazen ilk istekte runner'ı düşürüp ikinci istekte toparlayabiliyor.
-  // Bu yüzden "runner process has terminated" hatasında 1 kez retry yapıyoruz.
   let data;
   try {
     data = await fetchJson(
@@ -392,7 +386,7 @@ async function generateReply({
 
   const reply = (data?.response || "").trim();
   if (!reply) {
-    const err = new Error("Modelden boş yanıt alındı.");
+    const err = new Error("Modelden bo�x yanıt alındı.");
     err.statusCode = 502;
     throw err;
   }

@@ -66,14 +66,14 @@ export default function TeacherExamsPage() {
 
     if (!user?._id) {
       alert(
-        "Kullanıcı bilgisi yüklenemedi. Lütfen sayfayı yenileyin veya tekrar giriş yapın."
+        "Kullanıcı bilgisi yüklenemedi. Lütfen sayfayı yenileyin veya tekrar giri�x yapın."
       );
       return;
     }
 
     if (newTotalWeight > 100) {
       alert(
-        `Bu ders için toplam ağırlık 100'ü geçemez!\nMevcut toplam: ${currentTotalWeight}%\nYeni ağırlık: ${formData.weight}%\nToplam: ${newTotalWeight}%`
+        `Bu ders için toplam a�xırlık 100'ü geçemez!\nMevcut toplam: ${currentTotalWeight}%\nYeni a�xırlık: ${formData.weight}%\nToplam: ${newTotalWeight}%`
       );
       return;
     }
@@ -108,12 +108,12 @@ export default function TeacherExamsPage() {
       }
     } catch (error) {
       console.error("Fetch Hatası:", error);
-      alert("Sunucuya bağlanılamadı.");
+      alert("Sunucuya ba�xlanılamadı.");
     }
   };
 
   const handleDeleteExam = async (examId: string) => {
-    if (!confirm("Silmek istediğinize emin misiniz?")) return;
+    if (!confirm("Silmek istedi�xinize emin misiniz?")) return;
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
@@ -144,7 +144,7 @@ export default function TeacherExamsPage() {
   if (!user) {
     return (
       <div className="p-10 text-center text-red-500 font-bold">
-        Giriş yapmanız gerekiyor veya profil alınamadı.
+        Giri�x yapmanız gerekiyor veya profil alınamadı.
       </div>
     );
   }
@@ -157,11 +157,10 @@ export default function TeacherExamsPage() {
           onClick={() => setIsModalOpen(true)}
           className="px-6 py-3 bg-[#667eea] text-white rounded-lg font-semibold hover:bg-[#5a67d8] transition shadow-lg"
         >
-          + Yeni Sınav Oluştur
+          + Yeni Sınav Olu�xtur
         </button>
       </div>
 
-      {/* Sınav Listesi */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-600 font-bold border-b">
@@ -169,7 +168,7 @@ export default function TeacherExamsPage() {
               <th className="p-4">Sınav Adı</th>
               <th className="p-4">Ders</th>
               <th className="p-4">Tarih</th>
-              <th className="p-4">İşlem</th>
+              <th className="p-4">İ�xlem</th>
             </tr>
           </thead>
           <tbody>
@@ -204,17 +203,16 @@ export default function TeacherExamsPage() {
         </table>
         {exams.length === 0 && (
           <div className="p-8 text-center text-gray-500">
-            Henüz hiç sınav oluşturmadınız.
+            Henüz hiç sınav olu�xturmadınız.
           </div>
         )}
       </div>
 
-      {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md">
           <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl mt-80">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Yeni Sınav Oluştur
+              Yeni Sınav Olu�xtur
             </h2>
             <form onSubmit={handleCreateExam} className="space-y-4">
               <div>
@@ -327,11 +325,11 @@ export default function TeacherExamsPage() {
                       </span>
                       {newTotalWeight > 100 ? (
                         <span className="text-red-600 font-semibold ml-2">
-                          ⚠ Yeni toplam: {newTotalWeight}% (100'ü geçiyor!)
+                          �a� Yeni toplam: {newTotalWeight}% (100'ü geçiyor!)
                         </span>
                       ) : (
                         <span className="text-green-600 font-semibold ml-2">
-                          ✓ Yeni toplam: {newTotalWeight}%
+                          �S Yeni toplam: {newTotalWeight}%
                         </span>
                       )}
                     </div>
@@ -351,7 +349,7 @@ export default function TeacherExamsPage() {
                   type="submit"
                   className="px-6 py-2 bg-[#667eea] text-white rounded-lg hover:bg-[#5a67d8] font-bold"
                 >
-                  Oluştur
+                  Olu�xtur
                 </button>
               </div>
             </form>

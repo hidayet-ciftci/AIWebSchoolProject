@@ -9,7 +9,7 @@ const parsedUrl = new URL(CHROMA_URL);
 const noOpEmbeddingFunction = {
   generate: async () => {
     throw new Error(
-      "Bu koleksiyon için embeddingler uygulama tarafından Ollama ile dışarıdan üretilmelidir.",
+      "Bu koleksiyon için embeddingler uygulama tarafından Ollama ile dı�xarıdan üretilmelidir.",
     );
   },
 };
@@ -55,7 +55,6 @@ async function upsertDocumentChunks({ ids, documents, embeddings, metadatas }) {
   try {
     await collection.delete({ ids });
   } catch {
-    // IDs ilk kez ekleniyorsa silme hatası önemli değil.
   }
 
   await collection.add({ ids, documents, embeddings, metadatas });

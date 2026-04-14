@@ -18,7 +18,6 @@ export default function CreateCoursePage() {
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
     name: "",
     courseCode: "",
@@ -73,7 +72,7 @@ export default function CreateCoursePage() {
       });
 
       if (res.ok) {
-        alert("Ders başarıyla oluşturuldu!");
+        alert("Ders ba�xarıyla olu�xturuldu!");
         router.push("/admin/courses");
       } else {
         const errorData = await res.json();
@@ -91,7 +90,7 @@ export default function CreateCoursePage() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl h-fit border border-gray-100">
         <div className="p-6 border-b border-gray-100 bg-white rounded-t-2xl">
           <h2 className="text-2xl font-bold text-gray-800">
-            Yeni Ders Oluştur
+            Yeni Ders Olu�xtur
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             Ders kodu ve ders sayısını eksiksiz giriniz.
@@ -99,7 +98,6 @@ export default function CreateCoursePage() {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Üst Kısım: Ad, Kod ve Sayı */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-1 md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -111,7 +109,7 @@ export default function CreateCoursePage() {
                 value={formData.name}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="Örn: Algoritma ve Programlama"
+                placeholder="�rn: Algoritma ve Programlama"
               />
             </div>
 
@@ -125,7 +123,7 @@ export default function CreateCoursePage() {
                 value={formData.courseCode}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="Örn: BSM101"
+                placeholder="�rn: BSM101"
               />
             </div>
 
@@ -139,15 +137,14 @@ export default function CreateCoursePage() {
                 value={formData.lessonNumber}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="Örn: 14"
+                placeholder="�rn: 14"
               />
             </div>
           </div>
 
-          {/* Öğretmen */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Öğretmen Ata
+              ��xretmen Ata
             </label>
             <select
               name="teacher"
@@ -155,7 +152,7 @@ export default function CreateCoursePage() {
               onChange={handleInputChange}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="">Öğretmen Seçiniz...</option>
+              <option value="">��xretmen Seçiniz...</option>
               {teachers.map((t) => (
                 <option key={t._id} value={t._id}>
                   {t.name} {t.surname}
@@ -164,11 +161,10 @@ export default function CreateCoursePage() {
             </select>
           </div>
 
-          {/* Öğrenci Listesi */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-semibold text-gray-700">
-                Öğrencileri Seç
+                ��xrencileri Seç
               </label>
               <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
                 {formData.students.length} Seçili
@@ -193,7 +189,7 @@ export default function CreateCoursePage() {
                       }`}
                     >
                       {isSelected && (
-                        <span className="text-white text-xs">✓</span>
+                        <span className="text-white text-xs">�S</span>
                       )}
                     </div>
                     <div>
@@ -216,7 +212,6 @@ export default function CreateCoursePage() {
             </div>
           </div>
 
-          {/* Durum */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Durum
@@ -254,7 +249,7 @@ export default function CreateCoursePage() {
             disabled={isLoading}
             className="px-6 py-2.5 bg-[#667eea] text-white font-medium rounded-lg hover:bg-[#5a6fd6] shadow-md"
           >
-            {isLoading ? "Kaydediliyor..." : "Dersi Oluştur"}
+            {isLoading ? "Kaydediliyor..." : "Dersi Olu�xtur"}
           </button>
         </div>
       </div>

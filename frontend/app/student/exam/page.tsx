@@ -60,7 +60,7 @@ export default function ExamPage() {
     const end = new Date(start.getTime() + duration * 60000);
 
     if (now < start)
-      return { label: "Yaklaşıyor", color: "bg-[#fef5e7] text-[#d97706]" };
+      return { label: "Yakla�xıyor", color: "bg-[#fef5e7] text-[#d97706]" };
     if (now >= start && now <= end)
       return { label: "Aktif", color: "bg-[#e6fffa] text-[#319795]" };
     return { label: "Tamamlandı", color: "bg-gray-100 text-gray-500" };
@@ -77,21 +77,19 @@ export default function ExamPage() {
       {exams.length === 0 ? (
         <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
           <p className="text-gray-500 text-lg">
-            Henüz atanmış aktif bir sınavınız bulunmamaktadır.
+            Henüz atanmı�x aktif bir sınavınız bulunmamaktadır.
           </p>
         </div>
       ) : (
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          {/* Tablo Başlıkları */}
           <div className="hidden md:grid grid-cols-5 gap-4 pb-4 border-b border-gray-200 mb-4 font-bold text-gray-600">
             <div className="col-span-2">Ders & Sınav</div>
             <div>Tarih</div>
             <div>Süre</div>
             <div>Durum</div>
-            <div className="text-right">İşlem</div>
+            <div className="text-right">İ�xlem</div>
           </div>
 
-          {/* Sınav Listesi */}
           {exams.map((exam) => {
             const status = getStatus(exam.date, exam.duration);
             const courseName = (exam.course as any)?.name || "Ders Bilgisi Yok";
@@ -124,7 +122,6 @@ export default function ExamPage() {
                   </span>
                 </div>
 
-                {/* Buton Alanı */}
                 <div className="text-right">
                   {exam.isCompleted ? (
                     <span className="text-sm text-green-600 font-semibold">
@@ -139,7 +136,7 @@ export default function ExamPage() {
                     </button>
                   ) : (
                     <span className="text-sm text-gray-400 italic">
-                      {status.label === "Yaklaşıyor"
+                      {status.label === "Yakla�xıyor"
                         ? "Zamanı Gelmedi"
                         : "Süre Doldu"}
                     </span>

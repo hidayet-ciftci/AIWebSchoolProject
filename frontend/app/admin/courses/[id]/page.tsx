@@ -52,8 +52,8 @@ export default function EditCoursePage() {
           const data = await res.json();
           setFormData({
             name: data.name,
-            courseCode: data.courseCode || "", // Backend'den geleni eşle
-            lessonNumber: data.lessonNumber || "", // Backend'den geleni eşle
+            courseCode: data.courseCode || "",
+            lessonNumber: data.lessonNumber || "",
             teacher: data.teacher ? data.teacher._id : "",
             students: data.students.map((s: any) => s._id),
             status: data.status || "Aktif",
