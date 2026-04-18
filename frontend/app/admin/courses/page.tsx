@@ -24,41 +24,46 @@ interface Course {
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const fetchCourses = async () => {
+    const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:5000/api/courses");
+      const res = await fetch(`${API_URL}/api/courses`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!res.ok) throw new Error("Veriler çekilemedi");
       const data = await res.json();
       setCourses(data);
     } catch (error) {
       console.error("Hata:", error);
-      alert("Dersler yüklenirken bir hata olu�xtu.");
+      alert("Dersler yüklenirken bir hata oluştu.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
+    if (API_URL) {
+      fetchCourses();
+    }
+  }, [API_URL]);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Bu dersi silmek istedi�xinize emin misiniz?")) return;
+    if (!window.confirm("Bu dersi silmek istediğinize emin misiniz?")) return;
+    const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/courses/delete/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/courses/delete/${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
 
       if (res.ok) {
-        alert("Ders ba�xarıyla silindi");
+        alert("Ders başarıyla silindi");
         setCourses((prev) => prev.filter((course) => course._id !== id));
       } else {
-        alert("Silme i�xlemi ba�xarısız oldu.");
+        alert("Silme işlemi başarısız oldu.");
       }
     } catch (error) {
       console.error("Silme hatası:", error);
@@ -73,7 +78,7 @@ export default function AdminCoursesPage() {
         <div>
           <h1 className="text-3xl font-bold text-[#1a202c]">Ders Yönetimi</h1>
           <p className="text-gray-500 mt-1">
-            Dersleri, ö�xretmenleri ve ö�xrencileri tek yerden yönetin.
+            Dersleri, öğretmenleri ve öğrencileri tek yerden yönetin.
           </p>
         </div>
 
@@ -114,7 +119,7 @@ export default function AdminCoursesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-medium uppercase">
-                    ��xretmen
+                    Öğretmen
                   </p>
                   <p className="text-sm font-semibold text-gray-800">
                     {course.teacher
@@ -131,7 +136,7 @@ export default function AdminCoursesPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 font-medium uppercase">
-                      ��xrenci
+                      Öğrenci
                     </p>
                     <p className="text-sm font-semibold text-gray-800">
                       {course.students?.length} Kayıtlı

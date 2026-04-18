@@ -32,7 +32,7 @@ export default function TeacherLayout({
       try {
         const user = JSON.parse(userStr);
         if (user.role !== "teacher") {
-          toast.error("Bu alana giri�x yetkiniz yok!");
+          toast.error("Bu alana giriş yetkiniz yok!");
           setTimeout(() => {
             router.back();
           }, 1000);
@@ -55,7 +55,7 @@ export default function TeacherLayout({
         });
 
         if (!res.ok) {
-          throw new Error("Token geçersiz veya süresi dolmu�x");
+          throw new Error("Token geçersiz veya süresi dolmuş");
         }
 
         setIsAuthorized(true);
@@ -77,7 +77,7 @@ export default function TeacherLayout({
     clearAllChatMessages();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    toast.success("�!ıkı�x yapıldı");
+    toast.success("Çıkış yapıldı");
     router.push("/");
   };
 
@@ -128,39 +128,39 @@ export default function TeacherLayout({
       >
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-            {profile?.name?.charAt(0).toUpperCase() || "�"}
+            {profile?.name?.charAt(0).toUpperCase() || "Ö"}
           </div>
           <h2 className="font-semibold text-lg">
-            {profile?.name || "��xretmen"}
+            {profile?.name || "Öğretmen"}
           </h2>
-          <p className="text-gray-400 text-sm">��xretmen</p>
+          <p className="text-gray-400 text-sm">Öğretmen</p>
         </div>
 
         <nav className="flex-1 space-y-2">
-          <NavLink href="/teacher" icon="" label="Anasayfa" />
-          <NavLink href="/teacher/profile" icon="" label="Profil" />
-          <NavLink href="/teacher/courses" icon="" label="Dersler" />
-          <NavLink href="/teacher/exams" icon="" label="Sınavlar" />
-          <NavLink href="/teacher/grades" icon="" label="Notlar" />
-          <NavLink href="/teacher/chatbot" icon="" label="ChatBot" />
+          <NavLink href="/teacher" label="Anasayfa" />
+          <NavLink href="/teacher/profile" label="Profil" />
+          <NavLink href="/teacher/courses" label="Dersler" />
+          <NavLink href="/teacher/exams" label="Sınavlar" />
+          <NavLink href="/teacher/grades" label="Notlar" />
+          <NavLink href="/teacher/chatbot" label="ChatBot" />
         </nav>
 
         <button
           onClick={handleLogout}
           className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-semibold mt-4 cursor-pointer flex items-center justify-center gap-2"
         >
-          �!ıkı�x Yap
+          Çıkış Yap
         </button>
       </aside>
 
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="md:hidden p-4 bg-white shadow-sm flex items-center justify-between">
-          <h1 className="font-bold text-gray-800">��xretmen Paneli</h1>
+          <h1 className="font-bold text-gray-800">Öğretmen Paneli</h1>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="text-2xl"
           >
-            �ܰ
+            ☰
           </button>
         </div>
 

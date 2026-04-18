@@ -203,18 +203,18 @@ export default function StudentDashboardHome() {
     );
   }
 
-  const studentName = profile?.name || "��xrenci";
+  const studentName = profile?.name || "Öğrenci";
 
   return (
     <div className="animate-fadeIn space-y-8">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#1a202c] mb-2">
-            Ho�x Geldiniz, {studentName}! x9
+            Hoş Geldiniz, {studentName}! 🎓
           </h1>
           <p className="text-[#718096]">
             {courses.length > 0
-              ? `${courses.length} dersiniz ve ${upcomingExams.length} yakla�xan sınavınız var`
+              ? `${courses.length} dersiniz ve ${upcomingExams.length} yaklaşan sınavınız var`
               : "Henüz ders kaydınız bulunmamaktadır"}
           </p>
         </div>
@@ -231,7 +231,7 @@ export default function StudentDashboardHome() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
           <div className="w-12 h-12 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
-            xa
+            📚
           </div>
           <p className="text-sm text-[#718096] mb-1">Aktif Dersler</p>
           <p className="text-2xl font-bold text-[#1a202c]">{courses.length}</p>
@@ -239,7 +239,7 @@ export default function StudentDashboardHome() {
 
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
           <div className="w-12 h-12 bg-linear-to-br from-[#48bb78] to-[#38a169] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
-            �S&
+            ✅
           </div>
           <p className="text-sm text-[#718096] mb-1">Tamamlanan Sınavlar</p>
           <p className="text-2xl font-bold text-[#1a202c]">
@@ -251,7 +251,7 @@ export default function StudentDashboardHome() {
           <div className="w-12 h-12 bg-linear-to-br from-[#f6ad55] to-[#ed8936] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
             ⏰
           </div>
-          <p className="text-sm text-[#718096] mb-1">Yakla�xan Sınavlar</p>
+          <p className="text-sm text-[#718096] mb-1">Yaklaşan Sınavlar</p>
           <p className="text-2xl font-bold text-[#1a202c]">
             {upcomingExams.length}
           </p>
@@ -259,7 +259,7 @@ export default function StudentDashboardHome() {
 
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
           <div className="w-12 h-12 bg-linear-to-br from-[#fc8181] to-[#f56565] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
-            x`
+            📝
           </div>
           <p className="text-sm text-[#718096] mb-1">Toplam Not</p>
           <p className="text-2xl font-bold text-[#1a202c]">
@@ -272,18 +272,18 @@ export default function StudentDashboardHome() {
         <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-[#1a202c]">
-              Yakla�xan Sınavlar
+              Yaklaşan Sınavlar
             </h2>
             <Link
               href="/student/exam"
               className="text-[#667eea] font-semibold text-sm hover:underline"
             >
-              Tümünü Gör � 
+              Tümünü Gör →
             </Link>
           </div>
           {upcomingExams.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              Yakla�xan sınavınız bulunmamaktadır.
+              Yaklaşan sınavınız bulunmamaktadır.
             </div>
           ) : (
             <div className="space-y-4">
@@ -315,9 +315,9 @@ export default function StudentDashboardHome() {
                       </span>
                     </div>
                     <div className="flex gap-4 text-sm text-[#718096]">
-                      <span>x& {formatDate(exam.date)}</span>
+                      <span>📅 {formatDate(exam.date)}</span>
                       <span>⏱️ {exam.duration} dakika</span>
-                      <span className={colors.text}>x� {examTypeLabel}</span>
+                      <span className={colors.text}>📌 {examTypeLabel}</span>
                     </div>
                   </div>
                 );
@@ -333,7 +333,7 @@ export default function StudentDashboardHome() {
               href="/student/grades"
               className="text-[#667eea] font-semibold text-sm hover:underline"
             >
-              Detay � 
+              Detay →
             </Link>
           </div>
           {recentGrades.length === 0 ? (
@@ -380,7 +380,7 @@ export default function StudentDashboardHome() {
             href="/student/courses"
             className="text-[#667eea] font-semibold text-sm hover:underline"
           >
-            Tümünü Gör � 
+            Tümünü Gör →
           </Link>
         </div>
         {courses.length === 0 ? (
@@ -399,7 +399,7 @@ export default function StudentDashboardHome() {
                   {course.courseCode}
                 </p>
                 <p className="text-sm text-[#667eea]">
-                  x�⬍x�� {course.teacher?.name} {course.teacher?.surname}
+                  👨‍🏫 {course.teacher?.name} {course.teacher?.surname}
                 </p>
               </div>
             ))}

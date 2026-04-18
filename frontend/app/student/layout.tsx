@@ -31,7 +31,7 @@ export default function StudentLayout({
       try {
         const user = JSON.parse(userStr);
         if (user.role !== "student") {
-          toast.error("Yetkisiz giri�x denemesi!");
+          toast.error("Yetkisiz giriş denemesi!");
           setTimeout(() => {
             router.back();
           }, 1000);
@@ -60,7 +60,7 @@ export default function StudentLayout({
         setIsAuthorized(true);
       } catch (error) {
         console.error("Auth check failed:", error);
-        toast.error("Oturum süreniz doldu, lütfen tekrar giri�x yapın.");
+        toast.error("Oturum süreniz doldu, lütfen tekrar giriş yapın.");
 
         clearAllChatMessages();
         localStorage.removeItem("token");
@@ -76,7 +76,7 @@ export default function StudentLayout({
     clearAllChatMessages();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    toast.success("�!ıkı�x yapıldı");
+    toast.success("Çıkış yapıldı");
     router.push("/");
   };
 
@@ -126,12 +126,12 @@ export default function StudentLayout({
       >
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-            {profile?.name?.charAt(0).toUpperCase() || "�"}
+            {profile?.name?.charAt(0).toUpperCase() || "Ö"}
           </div>
           <h2 className="font-semibold text-lg">
-            {profile?.name || "��xrenci"}
+            {profile?.name || "Öğrenci"}
           </h2>
-          <p className="text-gray-400 text-sm">��xrenci</p>
+          <p className="text-gray-400 text-sm">Öğrenci</p>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -147,17 +147,17 @@ export default function StudentLayout({
           onClick={handleLogout}
           className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-semibold mt-4 flex items-center justify-center gap-2 cursor-pointer"
         >
-          �!ıkı�x Yap
+          Çıkış Yap
         </button>
       </aside>
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="md:hidden p-4 bg-white shadow-sm flex items-center justify-between">
-          <h1 className="font-bold text-gray-800">��xrenci Paneli</h1>
+          <h1 className="font-bold text-gray-800">Öğrenci Paneli</h1>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="text-2xl"
           >
-            �ܰ
+            ☰
           </button>
         </div>
 

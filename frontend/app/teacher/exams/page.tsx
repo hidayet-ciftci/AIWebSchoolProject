@@ -29,7 +29,7 @@ export default function TeacherExamsPage() {
         `${
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
         }/api/courses/teacher/my-courses`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
         .then((res) => res.json())
         .then((data) => {
@@ -41,7 +41,7 @@ export default function TeacherExamsPage() {
         `${
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
         }/api/exams/teacher/${user._id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
         .then((res) => res.json())
         .then((data) => {
@@ -66,14 +66,14 @@ export default function TeacherExamsPage() {
 
     if (!user?._id) {
       alert(
-        "Kullanıcı bilgisi yüklenemedi. Lütfen sayfayı yenileyin veya tekrar giri�x yapın."
+        "Kullanıcı bilgisi yüklenemedi. Lütfen sayfayı yenileyin veya tekrar giriş yapın.",
       );
       return;
     }
 
     if (newTotalWeight > 100) {
       alert(
-        `Bu ders için toplam a�xırlık 100'ü geçemez!\nMevcut toplam: ${currentTotalWeight}%\nYeni a�xırlık: ${formData.weight}%\nToplam: ${newTotalWeight}%`
+        `Bu ders için toplam ağırlık 100'ü geçemez!\nMevcut toplam: ${currentTotalWeight}%\nYeni ağırlık: ${formData.weight}%\nToplam: ${newTotalWeight}%`,
       );
       return;
     }
@@ -95,7 +95,7 @@ export default function TeacherExamsPage() {
             ...formData,
             teacherId: user._id,
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -108,12 +108,12 @@ export default function TeacherExamsPage() {
       }
     } catch (error) {
       console.error("Fetch Hatası:", error);
-      alert("Sunucuya ba�xlanılamadı.");
+      alert("Sunucuya bağlanılamadı.");
     }
   };
 
   const handleDeleteExam = async (examId: string) => {
-    if (!confirm("Silmek istedi�xinize emin misiniz?")) return;
+    if (!confirm("Silmek istediğinize emin misiniz?")) return;
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
@@ -123,7 +123,7 @@ export default function TeacherExamsPage() {
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       if (res.ok) setExams(exams.filter((e) => e._id !== examId));
     } catch (err) {
@@ -144,7 +144,7 @@ export default function TeacherExamsPage() {
   if (!user) {
     return (
       <div className="p-10 text-center text-red-500 font-bold">
-        Giri�x yapmanız gerekiyor veya profil alınamadı.
+        Giriş yapmanız gerekiyor veya profil alınamadı.
       </div>
     );
   }
@@ -157,7 +157,7 @@ export default function TeacherExamsPage() {
           onClick={() => setIsModalOpen(true)}
           className="px-6 py-3 bg-[#667eea] text-white rounded-lg font-semibold hover:bg-[#5a67d8] transition shadow-lg"
         >
-          + Yeni Sınav Olu�xtur
+          + Yeni Sınav Oluştur
         </button>
       </div>
 
@@ -168,7 +168,7 @@ export default function TeacherExamsPage() {
               <th className="p-4">Sınav Adı</th>
               <th className="p-4">Ders</th>
               <th className="p-4">Tarih</th>
-              <th className="p-4">İ�xlem</th>
+              <th className="p-4">İşlem</th>
             </tr>
           </thead>
           <tbody>
@@ -203,7 +203,7 @@ export default function TeacherExamsPage() {
         </table>
         {exams.length === 0 && (
           <div className="p-8 text-center text-gray-500">
-            Henüz hiç sınav olu�xturmadınız.
+            Henüz hiç sınav oluşturmadınız.
           </div>
         )}
       </div>
@@ -212,7 +212,7 @@ export default function TeacherExamsPage() {
         <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md">
           <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl mt-80">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Yeni Sınav Olu�xtur
+              Yeni Sınav Oluştur
             </h2>
             <form onSubmit={handleCreateExam} className="space-y-4">
               <div>
@@ -325,11 +325,12 @@ export default function TeacherExamsPage() {
                       </span>
                       {newTotalWeight > 100 ? (
                         <span className="text-red-600 font-semibold ml-2">
-                          �a� Yeni toplam: {newTotalWeight}% (100'ü geçiyor!)
+                          ⚠️ Yeni toplam: {newTotalWeight}% (100&apos;ü
+                          geçiyor!)
                         </span>
                       ) : (
                         <span className="text-green-600 font-semibold ml-2">
-                          �S Yeni toplam: {newTotalWeight}%
+                          ✅ Yeni toplam: {newTotalWeight}%
                         </span>
                       )}
                     </div>
@@ -349,7 +350,7 @@ export default function TeacherExamsPage() {
                   type="submit"
                   className="px-6 py-2 bg-[#667eea] text-white rounded-lg hover:bg-[#5a67d8] font-bold"
                 >
-                  Olu�xtur
+                  Oluştur
                 </button>
               </div>
             </form>

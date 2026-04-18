@@ -98,7 +98,7 @@ export default function TeacherDashboardHome() {
 
   const totalStudents = courses.reduce(
     (sum, course) => sum + (course.students?.length || 0),
-    0
+    0,
   );
 
   const now = new Date();
@@ -164,23 +164,23 @@ export default function TeacherDashboardHome() {
     );
   }
 
-  const teacherName = profile?.name || "��xretmen";
+  const teacherName = profile?.name || "Öğretmen";
 
   return (
     <div className="animate-fadeIn space-y-8">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#1a202c] mb-2">
-            Ho�x Geldiniz, {teacherName}! x9
+            Hoş Geldiniz, {teacherName}! 🎓
           </h1>
           <p className="text-[#718096]">
             {courses.length > 0
-              ? `${courses.length} dersiniz ve ${upcomingExams.length} yakla�xan sınav var`
+              ? `${courses.length} dersiniz ve ${upcomingExams.length} yaklaşan sınav var`
               : "Henüz dersiniz bulunmamaktadır"}
           </p>
         </div>
         <div className="bg-white p-4 px-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm text-[#718096] mb-1">Toplam ��xrenci</p>
+          <p className="text-sm text-[#718096] mb-1">Toplam Öğrenci</p>
           <p className="text-3xl font-bold text-[#667eea]">{totalStudents}</p>
         </div>
       </div>
@@ -188,7 +188,7 @@ export default function TeacherDashboardHome() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
           <div className="w-12 h-12 bg-linear-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
-            xa
+            📚
           </div>
           <p className="text-sm text-[#718096] mb-1">Aktif Dersler</p>
           <p className="text-2xl font-bold text-[#1a202c]">{courses.length}</p>
@@ -196,7 +196,7 @@ export default function TeacherDashboardHome() {
 
         <div className="bg-white p-6 rounded-xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
           <div className="w-12 h-12 bg-linear-to-br from-[#f6ad55] to-[#ed8936] rounded-xl flex items-center justify-center text-2xl text-white mb-3">
-            x�
+            ⏰
           </div>
           <p className="text-sm text-[#718096] mb-1">Bekleyen Sınavlar</p>
           <p className="text-2xl font-bold text-[#1a202c]">
@@ -208,18 +208,18 @@ export default function TeacherDashboardHome() {
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-[#1a202c]">
-            Yakla�xan Sınavlar
+            Yaklaşan Sınavlar
           </h2>
           <Link
             href="/teacher/exams"
             className="text-[#667eea] font-semibold text-sm hover:underline"
           >
-            Tümünü Gör � 
+            Tümünü Gör →
           </Link>
         </div>
         {upcomingExams.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            Yakla�xan sınavınız bulunmamaktadır.
+            Yaklaşan sınavınız bulunmamaktadır.
           </div>
         ) : (
           <div className="space-y-4">
@@ -239,7 +239,7 @@ export default function TeacherDashboardHome() {
                     <div>
                       <p className="font-bold text-[#1a202c]">{exam.title}</p>
                       <p className="text-sm text-[#718096]">
-                        {studentCount} ��xrenci Katılacak
+                        {studentCount} Öğrenci Katılacak
                       </p>
                     </div>
                     <span
@@ -251,9 +251,9 @@ export default function TeacherDashboardHome() {
                     </span>
                   </div>
                   <div className="flex gap-4 text-sm text-[#718096] mb-3">
-                    <span>x& {formatDate(exam.date)}</span>
+                    <span>📅 {formatDate(exam.date)}</span>
                     <span>⏱️ {exam.duration} dakika</span>
-                    <span className={colors.text}>x� {examTypeLabel}</span>
+                    <span className={colors.text}>📌 {examTypeLabel}</span>
                   </div>
                   <button
                     onClick={() => router.push(`/teacher/exams/${exam._id}`)}
@@ -275,7 +275,7 @@ export default function TeacherDashboardHome() {
             href="/teacher/courses"
             className="text-[#667eea] font-semibold text-sm hover:underline"
           >
-            Tümünü Gör � 
+            Tümünü Gör →
           </Link>
         </div>
         {courses.length === 0 ? (
@@ -299,7 +299,7 @@ export default function TeacherDashboardHome() {
                   </p>
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-[#667eea]">
-                      x� {studentCount} ��xrenci
+                      👥 {studentCount} Öğrenci
                     </p>
                     {courseGrade && courseGrade.overallAverage > 0 && (
                       <p className="text-sm font-semibold text-[#1a202c]">

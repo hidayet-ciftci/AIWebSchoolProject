@@ -64,7 +64,7 @@ export default function GradesPage() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (res.ok) {
@@ -130,7 +130,7 @@ export default function GradesPage() {
         course.weightedAverage =
           course.totalWeight > 0 ? weightedSum / course.totalWeight : 0;
         return course;
-      }
+      },
     );
 
     setGroupedGrades(grouped);
@@ -183,7 +183,7 @@ export default function GradesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-600 font-semibold">
-                    A�xırlıklı Ortalama
+                    Ağırlıklı Ortalama
                   </p>
                   <span className="text-3xl font-bold text-[#667eea]">
                     {course.weightedAverage.toFixed(2)}
@@ -216,7 +216,7 @@ export default function GradesPage() {
                           {exam.isGraded ? exam.score : "G"}
                         </p>
                         <p className="text-xs text-gray-500">
-                          A�xırlık: %{exam.weight}
+                          Ağırlık: %{exam.weight}
                         </p>
                         {!exam.isGraded && (
                           <p className="text-xs text-red-500 italic">

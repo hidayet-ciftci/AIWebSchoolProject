@@ -8,6 +8,7 @@ export default function ExamPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -15,18 +16,15 @@ export default function ExamPage() {
         const token = localStorage.getItem("token");
 
         if (!token) {
-          router.push("/login");
+          router.push("/");
           return;
         }
 
-        const res = await fetch(
-          `http://localhost:5000/api/exams/student/my-exams`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await fetch(`${API_URL}/api/exams/student/my-exams`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (res.ok) {
           const data = await res.json();
@@ -41,8 +39,10 @@ export default function ExamPage() {
       }
     };
 
-    fetchExams();
-  }, [router]);
+    if (API_URL) {
+      fetchExams();
+    }
+  }, [router, API_URL]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("tr-TR", {
@@ -60,7 +60,7 @@ export default function ExamPage() {
     const end = new Date(start.getTime() + duration * 60000);
 
     if (now < start)
-      return { label: "Yakla�xıyor", color: "bg-[#fef5e7] text-[#d97706]" };
+      return { label: "Yaklaşıyor", color: "bg-[#fef5e7] text-[#d97706]" };
     if (now >= start && now <= end)
       return { label: "Aktif", color: "bg-[#e6fffa] text-[#319795]" };
     return { label: "Tamamlandı", color: "bg-gray-100 text-gray-500" };
@@ -77,7 +77,7 @@ export default function ExamPage() {
       {exams.length === 0 ? (
         <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
           <p className="text-gray-500 text-lg">
-            Henüz atanmı�x aktif bir sınavınız bulunmamaktadır.
+            Henüz atanmış aktif bir sınavınız bulunmamaktadır.
           </p>
         </div>
       ) : (
@@ -87,7 +87,7 @@ export default function ExamPage() {
             <div>Tarih</div>
             <div>Süre</div>
             <div>Durum</div>
-            <div className="text-right">İ�xlem</div>
+            <div className="text-right">İşlem</div>
           </div>
 
           {exams.map((exam) => {
@@ -136,7 +136,7 @@ export default function ExamPage() {
                     </button>
                   ) : (
                     <span className="text-sm text-gray-400 italic">
-                      {status.label === "Yakla�xıyor"
+                      {status.label === "Yaklaşıyor"
                         ? "Zamanı Gelmedi"
                         : "Süre Doldu"}
                     </span>

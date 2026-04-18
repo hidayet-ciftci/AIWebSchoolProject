@@ -19,7 +19,7 @@ export default function CreateUserPage() {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -46,8 +46,8 @@ export default function CreateUserPage() {
 
       toast.success(
         `Yeni ${
-          formData.role === "teacher" ? "��xretmen" : "��xrenci"
-        } ba�xarıyla olu�xturuldu!`
+          formData.role === "teacher" ? "Öğretmen" : "Öğrenci"
+        } başarıyla oluşturuldu!`,
       );
 
       setFormData({
@@ -60,7 +60,7 @@ export default function CreateUserPage() {
         role: "student",
       });
     } catch (error: any) {
-      toast.error(error.message || "Kayıt i�xlemi ba�xarısız");
+      toast.error(error.message || "Kayıt işlemi başarısız");
     }
   };
 
@@ -72,7 +72,7 @@ export default function CreateUserPage() {
             Yeni Kullanıcı Ekle
           </h1>
           <p className="text-gray-500">
-            Sisteme yeni ��xrenci, ��xretmen veya Admin kaydedin.
+            Sisteme yeni Öğrenci, Öğretmen veya Admin kaydedin.
           </p>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function CreateUserPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="�rn: Ahmet"
+                placeholder="Örn: Ahmet"
                 className="w-full p-3 border rounded-lg outline-none focus:border-[#667eea] transition-colors"
               />
             </div>
@@ -102,7 +102,7 @@ export default function CreateUserPage() {
                 name="surname"
                 value={formData.surname}
                 onChange={handleChange}
-                placeholder="�rn: Yılmaz"
+                placeholder="Örn: Yılmaz"
                 className="w-full p-3 border rounded-lg outline-none focus:border-[#667eea] transition-colors"
               />
             </div>
@@ -111,7 +111,7 @@ export default function CreateUserPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-2">
-                Ya�x
+                Yaş
               </label>
               <input
                 required
@@ -154,7 +154,7 @@ export default function CreateUserPage() {
                   onChange={handleChange}
                   className="w-4 h-4 text-[#667eea]"
                 />
-                <span className="text-gray-700">��xrenci</span>
+                <span className="text-gray-700">Öğrenci</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -165,7 +165,7 @@ export default function CreateUserPage() {
                   onChange={handleChange}
                   className="w-4 h-4 text-[#667eea]"
                 />
-                <span className="text-gray-700">��xretmen</span>
+                <span className="text-gray-700">Öğretmen</span>
               </label>
             </div>
           </div>

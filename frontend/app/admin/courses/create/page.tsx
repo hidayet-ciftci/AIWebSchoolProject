@@ -13,6 +13,7 @@ interface UserProfile {
 
 export default function CreateCoursePage() {
   const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const [teachers, setTeachers] = useState<UserProfile[]>([]);
   const [students, setStudents] = useState<UserProfile[]>([]);
@@ -29,8 +30,11 @@ export default function CreateCoursePage() {
 
   useEffect(() => {
     const fetchUsers = async () => {
+      const token = localStorage.getItem("token");
       try {
-        const res = await fetch("http://localhost:5000/api/users");
+        const res = await fetch(`${API_URL}/api/users`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (res.ok) {
           const data: UserProfile[] = await res.json();
           setTeachers(data.filter((u) => u.role === "teacher"));
@@ -40,8 +44,10 @@ export default function CreateCoursePage() {
         console.error("Kullanıcılar çekilemedi", error);
       }
     };
-    fetchUsers();
-  }, []);
+    if (API_URL) {
+      fetchUsers();
+    }
+  }, [API_URL]);
 
   const handleInputChange = (e: any) => {
     const { name, value } = e.target;
@@ -61,18 +67,20 @@ export default function CreateCoursePage() {
   };
 
   const handleSave = async () => {
+    const token = localStorage.getItem("token");
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/courses/create", {
+      const res = await fetch(`${API_URL}/api/courses/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(formData),
       });
 
       if (res.ok) {
-        alert("Ders ba�xarıyla olu�xturuldu!");
+        alert("Ders başarıyla oluşturuldu!");
         router.push("/admin/courses");
       } else {
         const errorData = await res.json();
@@ -90,7 +98,7 @@ export default function CreateCoursePage() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl h-fit border border-gray-100">
         <div className="p-6 border-b border-gray-100 bg-white rounded-t-2xl">
           <h2 className="text-2xl font-bold text-gray-800">
-            Yeni Ders Olu�xtur
+            Yeni Ders Oluştur
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             Ders kodu ve ders sayısını eksiksiz giriniz.
@@ -109,7 +117,7 @@ export default function CreateCoursePage() {
                 value={formData.name}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="�rn: Algoritma ve Programlama"
+                placeholder="Örn: Algoritma ve Programlama"
               />
             </div>
 
@@ -123,7 +131,7 @@ export default function CreateCoursePage() {
                 value={formData.courseCode}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="�rn: BSM101"
+                placeholder="Örn: BSM101"
               />
             </div>
 
@@ -137,14 +145,14 @@ export default function CreateCoursePage() {
                 value={formData.lessonNumber}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="�rn: 14"
+                placeholder="Örn: 14"
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              ��xretmen Ata
+              Öğretmen Ata
             </label>
             <select
               name="teacher"
@@ -152,7 +160,7 @@ export default function CreateCoursePage() {
               onChange={handleInputChange}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="">��xretmen Seçiniz...</option>
+              <option value="">Öğretmen Seçiniz...</option>
               {teachers.map((t) => (
                 <option key={t._id} value={t._id}>
                   {t.name} {t.surname}
@@ -164,7 +172,7 @@ export default function CreateCoursePage() {
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-semibold text-gray-700">
-                ��xrencileri Seç
+                Öğrencileri Seç
               </label>
               <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
                 {formData.students.length} Seçili
@@ -189,7 +197,7 @@ export default function CreateCoursePage() {
                       }`}
                     >
                       {isSelected && (
-                        <span className="text-white text-xs">�S</span>
+                        <span className="text-white text-xs">✓</span>
                       )}
                     </div>
                     <div>
@@ -249,7 +257,7 @@ export default function CreateCoursePage() {
             disabled={isLoading}
             className="px-6 py-2.5 bg-[#667eea] text-white font-medium rounded-lg hover:bg-[#5a6fd6] shadow-md"
           >
-            {isLoading ? "Kaydediliyor..." : "Dersi Olu�xtur"}
+            {isLoading ? "Kaydediliyor..." : "Dersi Oluştur"}
           </button>
         </div>
       </div>

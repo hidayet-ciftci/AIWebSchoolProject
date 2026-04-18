@@ -50,7 +50,7 @@ export default function TeacherGradesPage() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (res.ok) {
@@ -160,7 +160,7 @@ export default function TeacherGradesPage() {
                   <table className="w-full text-left">
                     <thead className="bg-[#f7fafc] text-gray-600 font-semibold border-b border-gray-200">
                       <tr>
-                        <th className="p-4">��xrenci</th>
+                        <th className="p-4">Öğrenci</th>
                         {examTypes.map((type) => (
                           <th key={type} className="p-4">
                             {getExamTypeLabel(type)}
@@ -176,7 +176,7 @@ export default function TeacherGradesPage() {
                             colSpan={examTypes.length + 2}
                             className="p-8 text-center text-gray-500"
                           >
-                            Bu derste henüz ö�xrenci bulunmamaktadır.
+                            Bu derste henüz öğrenci bulunmamaktadır.
                           </td>
                         </tr>
                       ) : (
@@ -199,10 +199,12 @@ export default function TeacherGradesPage() {
                               const examScores = student.exams
                                 .filter((exam) => exam.examType === type)
                                 .map((exam) => exam.score)
-                                .filter((score): score is number => score !== null);
+                                .filter(
+                                  (score): score is number => score !== null,
+                                );
 
                               const examsOfType = student.exams.filter(
-                                (exam) => exam.examType === type
+                                (exam) => exam.examType === type,
                               );
 
                               return (
@@ -232,7 +234,9 @@ export default function TeacherGradesPage() {
                                                 : "text-gray-400"
                                             }`}
                                           >
-                                            {exam.score !== null ? exam.score : "G"}
+                                            {exam.score !== null
+                                              ? exam.score
+                                              : "G"}
                                           </span>
                                           <span className="text-xs text-gray-500 ml-1">
                                             ({exam.weight}%)
@@ -243,8 +247,10 @@ export default function TeacherGradesPage() {
                                         <div className="text-xs text-[#667eea] font-medium">
                                           Ort:{" "}
                                           {(
-                                            examScores.reduce((a, b) => a + b, 0) /
-                                            examScores.length
+                                            examScores.reduce(
+                                              (a, b) => a + b,
+                                              0,
+                                            ) / examScores.length
                                           ).toFixed(1)}
                                         </div>
                                       )}

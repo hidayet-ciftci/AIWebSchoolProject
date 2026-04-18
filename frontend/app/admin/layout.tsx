@@ -59,7 +59,7 @@ export default function AdminLayout({
     clearAllChatMessages();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    toast.success("�!ıkı�x yapıldı");
+    toast.success("Çıkış yapıldı");
     router.push("/");
   };
 
@@ -122,7 +122,7 @@ export default function AdminLayout({
           onClick={handleLogout}
           className="w-full p-3 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-semibold mt-4 cursor-pointer flex items-center justify-center gap-2"
         >
-          �!ıkı�x Yap
+          Çıkış Yap
         </button>
       </aside>
 
@@ -133,7 +133,7 @@ export default function AdminLayout({
             onClick={() => setIsMobileMenuOpen(true)}
             className="text-2xl"
           >
-            �ܰ
+            ☰
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 md:p-8">{children}</div>
