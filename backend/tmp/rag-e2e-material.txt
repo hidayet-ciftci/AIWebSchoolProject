@@ -1,0 +1,6 @@
+Fizik ders notu
+
+Newton'un ikinci yasasi F = m * a seklinde ifade edilir.
+Kuvvet, kutle ile ivmenin carpimina esittir.
+SI birim sisteminde kuvvet birimi Newton'dur.
+Serbest dusme ivmesi yaklasik 9.8 m/s^2 kabul edilir.

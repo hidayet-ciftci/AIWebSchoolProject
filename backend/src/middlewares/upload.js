@@ -27,6 +27,7 @@ const fileFilter = (req, file, cb) => {
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
     "image/jpeg",
     "image/png",
   ];
@@ -36,9 +37,9 @@ const fileFilter = (req, file, cb) => {
   } else {
     cb(
       new Error(
-        "Desteklenmeyen dosya türü! Sadece PDF, Word ve Resim yükleyebilirsiniz."
+        "Desteklenmeyen dosya türü! Sadece PDF, Word, TXT ve Resim yükleyebilirsiniz.",
       ),
-      false
+      false,
     );
   }
 };
