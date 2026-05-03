@@ -141,7 +141,6 @@ def build_prompt(message: str, user: dict | None = None, context_chunks: list[di
             "Sen bir eğitim asistanısın. "
             "SADECE aşağıda verilen MATERYAL BAĞLAMI bölümündeki bilgileri kullanarak yanıt ver. "
             "Yanıtlarını Türkçe, açıklayıcı ve anlaşılır bir dille yaz. "
-            "Hangi kaynaktan bilgi aldığını yanıtında belirt: örn. [Kaynak 1: dosyaadı]. "
             "Eğer sorunun cevabı materyallerde yoksa tam olarak şunu yaz: "
             "'Bu materyaller içinde buna dair bilgi bulamadım.' "
             "Materyalde olmayan bilgileri kesinlikle uydurma."

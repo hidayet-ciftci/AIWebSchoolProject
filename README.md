@@ -132,7 +132,6 @@ AIWebSchoolProject şu amaçlar için tasarlanmıştır:
 - **RAG altyapısı**: materyal yükleme → chunk → embed → ChromaDB → retrieval → yanıt
 - **PDF desteği**: PyMuPDF ile sayfa/blok düzeyinde metin çıkarımı
 - **Embedding batching**: 8'li gruplar, OOM/crash önleme
-- **Kaynak gösterimi**: AI yanıtında hangi dosyadan bilgi alındığı etiket olarak gösterilir
 - **Sohbet geçmişi kalıcılığı**: mesajlar `localStorage`'da saklanır
 - **Mesaj doğrulama**: 2000 karakter sınırı (413 hatası)
 - **Materyal durum takibi**: `pending`, `processing`, `ready`, `failed`
@@ -305,7 +304,6 @@ Sistem temel uçtan uca akışla çalışır durumdadır. Mevcut başarı kriter
 | ChromaDB sorgusu             | ✅ Çalışıyor |
 | Ders bazlı RAG yanıtı        | ✅ Çalışıyor |
 | Fallback (bağlam yoksa)      | ✅ Çalışıyor |
-| Kaynak gösterimi (frontend)  | ✅ Çalışıyor |
 | PDF parse (PyMuPDF)          | ✅ Çalışıyor |
 
 ---
@@ -359,8 +357,7 @@ Sistem temel uçtan uca akışla çalışır durumdadır. Mevcut başarı kriter
   "rag": {
     "used": true,
     "reason": "ok",
-    "sourceCount": 2,
-    "sources": ["fizik-ders1.pdf", "mekanik-notlar.docx"]
+    "sourceCount": 2
   }
 }
 ```

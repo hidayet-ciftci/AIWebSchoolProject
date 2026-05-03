@@ -198,8 +198,12 @@ const deleteMaterial = async (req, res, next) => {
     }
 
     const diskPath = path.join(
-      process.cwd(),
-      material.fileUrl.replace(/^\/+/, "").replace(/\//g, path.sep),
+      __dirname,
+      "..",
+      "..",
+      "uploads",
+      "notes",
+      material.fileName,
     );
 
     if (fs.existsSync(diskPath)) {
