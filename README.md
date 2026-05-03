@@ -9,7 +9,9 @@ Okul yönetimi ile yapay zeka destekli öğrenmeyi aynı platformda birleştiren
 
 - [Proje Nedir?](#proje-nedir)
 - [Teknoloji Yığını](#teknoloji-yığını)
+- [Paketler](#paketler)
 - [Mimari](#mimari)
+- [RAG Sistemi Detaylı Akışı](#rag-sistemi-detaylı-akışı)
 - [Kullanıcı Rolleri ve Ekranlar](#kullanıcı-rolleri-ve-ekranlar)
 - [Özellikler](#özellikler)
 - [Kurulum](#kurulum)
@@ -51,6 +53,62 @@ AIWebSchoolProject şu amaçlar için tasarlanmıştır:
 
 ---
 
+## Paketler
+
+### Frontend — `frontend/package.json`
+
+| Paket                 | Kullanım                      |
+| --------------------- | ----------------------------- |
+| `next`                | React framework, routing, SSR |
+| `react` / `react-dom` | UI kütüphanesi                |
+| `typescript`          | Tip güvenliği                 |
+| `tailwindcss`         | Utility-first CSS             |
+| `react-hot-toast`     | Toast bildirimleri            |
+
+### Backend (Node.js) — `backend/package.json`
+
+| Paket          | Versiyon | Kullanım                             |
+| -------------- | -------- | ------------------------------------ |
+| `express`      | ^5.1.0   | HTTP sunucu, routing                 |
+| `mongoose`     | ^9.0.0   | MongoDB ORM                          |
+| `jsonwebtoken` | ^9.0.2   | JWT token üretimi/doğrulanması       |
+| `bcryptjs`     | ^3.0.3   | Şifre hashleme                       |
+| `multer`       | ^2.0.2   | Multipart dosya yükleme              |
+| `cors`         | ^2.8.5   | Cross-origin request yönetimi        |
+| `dotenv`       | ^17.2.3  | `.env` değişken yükleme              |
+| `bullmq`       | ^5.73.5  | Redis tabanlı iş kuyruğu (opsiyonel) |
+| `ioredis`      | ^5.10.1  | Redis bağlantısı (BullMQ için)       |
+| `nodemon`      | ^3.1.11  | Dev modunda otomatik restart         |
+
+### Backend (Python RAG Servisi) — `python_rag_service/requirements.txt`
+
+| Paket              | Kullanım                                        |
+| ------------------ | ----------------------------------------------- |
+| `fastapi==0.115.9` | HTTP API framework                              |
+| `uvicorn`          | ASGI sunucu (FastAPI’yi çalıştırır)             |
+| `pymongo`          | MongoDB bağlantısı (Python tarafı)              |
+| `chromadb==1.0.10` | Vector DB istemcisi                             |
+| `requests`         | Ollama’ya HTTP istekleri                        |
+| `PyMuPDF>=1.23.0`  | PDF parse — sayfa/blok düzeyinde metin çıkarımı |
+| `docx2txt`         | DOCX parse                                      |
+| `python-multipart` | FastAPI form/dosya yükleme desteği              |
+| `pydantic`         | Request/response şema validasyonu               |
+
+> **Önemli:** `chromadb==1.0.10` sürümü `fastapi==0.115.9` gerektirir. Daha yüksek fastapi sürümleri pip çakışmasına neden olur.
+
+### Harici Servisler (paket değil, kurulum gerekir)
+
+| Servis                    | Port  | Kullanım                                                             |
+| ------------------------- | ----- | -------------------------------------------------------------------- |
+| Ollama                    | 11434 | Yerel LLM çalıştırma ortamı                                          |
+| `llama3:latest`           | —     | Türkçe yanıt üretimi                                                 |
+| `nomic-embed-text:latest` | —     | Metin → vektör dönüşümü (embedding)                                  |
+| ChromaDB                  | 8000  | Vektör veritabanı                                                    |
+| MongoDB Atlas             | —     | Kullanıcı, kurs, sınav, not verileri                                 |
+| Redis _(opsiyonel)_       | 6380  | BullMQ kuyruğu için — `QUEUE_PROVIDER=local` kullanılıyorsa gerekmez |
+
+---
+
 ## Mimari
 
 ```
@@ -89,7 +147,96 @@ AIWebSchoolProject şu amaçlar için tasarlanmıştır:
 4. ChromaDB'de o derse ait en alakalı chunk'lar bulunur (top-k: 6, max mesafe: 0.65)
 5. Bulunan chunk'lar prompt bağlamı olarak Ollama'ya gönderilir
 6. Ollama Türkçe yanıt üretir (num_predict: 400, temperature: 0.3)
-7. Yanıt ve kaynak dosya adları frontend'e döner
+7. Yanıt frontend'e döner
+
+---
+
+## RAG Sistemi Detaylı Akışı
+
+> Node.js hiçbir zaman doğrudan Ollama veya ChromaDB'ye bağlanmaz. Tüm AI işi Python FastAPI servisine delege edilir.
+
+### Dosya Yükleme → Vektör Kaydetme
+
+```
+Öğretmen dosya yükler (PDF / DOCX / TXT)
+  ↓
+Multer → backend/uploads/notes/ dizinine kaydeder
+  ↓
+courseController.js → MongoDB'ye materyal kaydı oluşturur (status: "pending")
+  ↓
+ragIngestionQueue.js → setImmediate() ile async kuyruğa ekler
+  ↓
+ingestionProcessor.js → pythonRagClient.ingestMaterial() çağırır
+  ↓
+Python FastAPI /api/rag/ingest
+  ↓
+  ├─ document_parser.py  → PyMuPDF (PDF), docx2txt (DOCX), UTF-8 (TXT)
+  │                        → metin normalize edilir, SHA-256 hash alınır
+  │                        → aynı hash'te duplicate kontrolü yapılır
+  ├─ text_chunker.py     → paragraf sınırlarına göre chunk'lara bölünür
+  │                        → chunk boyutu: ~1000 karakter, overlap: ~200
+  ├─ ollama_service.py   → her chunk için Ollama nomic-embed-text
+  │                        → 8'li batch, batch'ler arası 0.1s bekleme
+  │                        → hata durumunda 0.75s bekle + 1 retry
+  └─ chroma_service.py   → ChromaDB'ye upsert
+                           → metadata: courseId, materialId, fileName, chunkIndex
+  ↓
+MongoDB'de status: "ready", chunksCount güncellenir
+```
+
+### Soru-Cevap Detayı
+
+```
+Kullanıcı soru yazar, ders seçer
+  ↓
+POST /chat  (Bearer JWT token)
+  ↓
+chat.js → verifyToken kontrolü
+  ↓
+ragService.js → getPythonRagContext() → Python /api/rag/context
+  ↓
+  ├─ rag_service.py → kurs erişim kontrolü (admin / öğretmen / öğrenci)
+  ├─ Ollama'ya soruyu embed ettirir (nomic-embed-text)
+  ├─ ChromaDB'ye "bu kursa ait, en yakın 6 chunk getir" sorgusu
+  └─ Mesafe filtresi: 0.65'ten uzak chunk'lar elenir
+        → Sonuç yoksa: useRag: false, fallback genel chatbot
+  ↓
+llmService.js → generatePythonReply() → Python /api/llm/generate
+  ↓
+  ├─ ollama_service.py → build_prompt()
+  │     → Sistem promptu (Türkçe, sadece materyaldeki bilgiyi kullan)
+  │     → Kullanıcı rolü + ders adı
+  │     → Bulunan chunk'lar MATERYAL BAĞCAMI bloğu olarak eklenir
+  │     → max 5000 karakter bağlam limiti
+  ├─ Ollama llama3:latest modeline gönderilir
+  │     → temperature: 0.3, max token: 400, stream: false
+  └─ Hata: runner terminated → 0.75s bekle + 1 retry
+  ↓
+Backend yanıtı döner: { reply, rag: { used, reason, sourceCount } }
+  ↓
+Frontend mesaj olarak gösterir
+```
+
+### Materyal Silme
+
+```
+DELETE /api/courses/:id/materials/:materialId
+  ↓
+  ├─ ChromaDB'den o materialId'ye ait tüm chunk'lar silinir
+  ├─ uploads/notes/ dizininden fiziksel dosya silinir
+  └─ MongoDB'den materyal kaydı kaldırılır
+```
+
+### Fallback Durumları
+
+| Durum                          | Sonuç                                       |
+| ------------------------------ | ------------------------------------------- |
+| Kurs seçilmemiş                | Direkt LLM'e genel sohbet sorusu gider      |
+| Kurs seçili ama materyal yok   | `no-results` → fallback genel cevap         |
+| Materyal var ama soru alakasız | `low-similarity` (mesafe > 0.65) → fallback |
+| Python servisi kapalı          | Node `503 Service Unavailable` döner        |
+| Ollama yanıt vermez            | `504 Gateway Timeout` döner                 |
+| Ollama runner çökerse          | 0.75s bekle + otomatik 1 retry              |
 
 ---
 
