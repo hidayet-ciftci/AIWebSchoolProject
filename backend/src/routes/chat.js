@@ -16,6 +16,12 @@ router.post("/", verifyToken, async (req, res, next) => {
       return res.status(400).json({ message: "message alanı zorunludur." });
     }
 
+    if (message.length > 2000) {
+      return res.status(413).json({
+        message: "Mesaj çok uzun. En fazla 2000 karakter gönderebilirsiniz.",
+      });
+    }
+
     const userCtx = {
       id: req.user?.id,
       role: req.user?.role,
@@ -40,6 +46,13 @@ router.post("/", verifyToken, async (req, res, next) => {
         used: ragContext.useRag,
         reason: ragContext.reason,
         sourceCount: ragContext.chunks.length,
+        sources: [
+          ...new Set(
+            (ragContext.chunks || [])
+              .map((c) => c.metadata?.fileName)
+              .filter(Boolean),
+          ),
+        ],
       },
     });
   } catch (error) {

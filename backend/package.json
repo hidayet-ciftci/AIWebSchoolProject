@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "dev": "nodemon app.js",
+    "dev": "nodemon --watch src --watch app.js --watch .env --ext js,mjs,cjs,json,env app.js",
     "start": "node app.js",
     "worker": "node src/workers/ragWorker.js",
     "dev:worker": "nodemon src/workers/ragWorker.js",

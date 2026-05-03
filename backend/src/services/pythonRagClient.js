@@ -112,7 +112,13 @@ async function generatePythonReply({
 }
 
 async function ingestMaterial(jobData) {
-  return callPythonRag("/api/rag/ingest", jobData);
+  // Ingestion can take much longer than chat requests (embedding large documents).
+  // Use a dedicated higher timeout: 5 minutes.
+  const ingestTimeoutMs = toPositiveNumber(
+    process.env.PY_RAG_INGEST_TIMEOUT_MS,
+    300_000,
+  );
+  return callPythonRag("/api/rag/ingest", jobData, ingestTimeoutMs);
 }
 
 async function deleteMaterialVectors(materialId) {

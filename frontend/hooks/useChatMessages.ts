@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 export type ChatMessage = {
   role: "user" | "ai";
   text: string;
+  sources?: string[];
 };
 
 const CHAT_STORAGE_PREFIX = "chat_history_";

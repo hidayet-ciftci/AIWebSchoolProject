@@ -18,6 +18,7 @@ function getRedisConnection() {
     redisConnection = new IORedis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+      lazyConnect: true,
     });
   } else {
     redisConnection = new IORedis({
@@ -25,6 +26,7 @@ function getRedisConnection() {
       port: Number(process.env.REDIS_PORT || 6379),
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+      lazyConnect: true,
     });
   }
 
@@ -58,7 +60,9 @@ function enqueueLocalFallback(jobData) {
         jobData.courseId,
         jobData.materialId,
         error.message,
-      ).catch(() => null);
+      ).catch((markErr) => {
+        console.error(`[queue] markMaterialFailed error:`, markErr.message);
+      });
     }
   });
 
@@ -73,9 +77,18 @@ async function enqueueMaterialIngestion(jobData) {
     return enqueueLocalFallback(jobData);
   }
 
+  let queue;
   try {
-    const queue = getIngestionQueue();
+    queue = getIngestionQueue();
+  } catch (error) {
+    console.error(
+      "BullMQ queue oluşturulamadı, yerel async fallback devreye alındı:",
+      error.message,
+    );
+    return enqueueLocalFallback(jobData);
+  }
 
+  try {
     return await queue.add("ingest-material", jobData, {
       attempts: 3,
       backoff: {

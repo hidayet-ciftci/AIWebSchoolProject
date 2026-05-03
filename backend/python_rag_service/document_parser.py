@@ -1,29 +1,47 @@
 import hashlib
-import io
+import re
 from pathlib import Path
 
 import docx2txt
-from pypdf import PdfReader
+import fitz  # PyMuPDF
 
 from .errors import ApiError
 
 
 def normalize_text(text: str = "") -> str:
-    return (
-        text.replace("\r", "")
-        .replace("\t", " ")
-        .replace("  ", " ")
-        .replace("\n\n\n", "\n\n")
-        .strip()
-    )
+    # Fix hyphenated line-breaks (e.g. "keli-\nme" → "kelime")
+    text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
+    text = text.replace("\r", "")
+    text = text.replace("\t", " ")
+    # Collapse runs of spaces
+    text = re.sub(r" {2,}", " ", text)
+    # Reduce 3+ consecutive newlines to two
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
 def _parse_pdf_buffer(buffer: bytes) -> tuple[str, int | None]:
-    reader = PdfReader(io.BytesIO(buffer))
-    pages = []
-    for page in reader.pages:
-        pages.append(page.extract_text() or "")
-    return "\n".join(pages), len(reader.pages)
+    doc = fitz.open(stream=buffer, filetype="pdf")
+    page_count = len(doc)
+    page_texts = []
+    for page in doc:
+        # Extract text at block level to preserve paragraph structure.
+        # Blocks within a page are joined with a single newline;
+        # pages are separated by a blank line so the chunker sees page
+        # boundaries as paragraph boundaries without over-fragmenting.
+        blocks = page.get_text("blocks")
+        block_texts = []
+        for block in blocks:
+            # block tuple: (x0, y0, x1, y1, text, block_no, block_type)
+            # block_type 0 = text, 1 = image
+            if block[6] == 0:
+                block_text = block[4].strip()
+                if block_text:
+                    block_texts.append(block_text)
+        if block_texts:
+            page_texts.append("\n".join(block_texts))
+    doc.close()
+    return "\n\n".join(page_texts), page_count
 
 
 def extract_document_text(file_path: str, mime_type: str = ""):

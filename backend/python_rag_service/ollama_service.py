@@ -17,6 +17,10 @@ from .errors import ApiError, is_runner_terminated_message
 
 
 _cached_model = None
+_cached_model_at: float = 0.0
+_MODEL_CACHE_TTL: float = 300.0  # 5 minutes
+
+_EMBED_BATCH_SIZE = 8
 
 
 def _is_embedding_model(model_name: str = "") -> bool:
@@ -62,8 +66,8 @@ def _fetch_json(path: str, method: str = "GET", payload=None, timeout_ms: int = 
 
 
 def _resolve_model() -> str:
-    global _cached_model
-    if _cached_model:
+    global _cached_model, _cached_model_at
+    if _cached_model and (time.time() - _cached_model_at) < _MODEL_CACHE_TTL:
         return _cached_model
 
     try:
@@ -85,17 +89,20 @@ def _resolve_model() -> str:
 
         if preferred:
             _cached_model = preferred
+            _cached_model_at = time.time()
             return _cached_model
 
         fallback = next((name for name in names if not _is_embedding_model(name)), None)
         if fallback:
             _cached_model = fallback
+            _cached_model_at = time.time()
             return _cached_model
     except ApiError:
         pass
 
     if not _is_embedding_model(OLLAMA_MODEL):
         _cached_model = OLLAMA_MODEL
+        _cached_model_at = time.time()
         return _cached_model
 
     raise ApiError("No generate-capable model is available in Ollama.", 503)
@@ -129,15 +136,22 @@ def build_prompt(message: str, user: dict | None = None, context_chunks: list[di
     context_chunks = _limit_context_chunks(context_chunks)
     has_context = len(context_chunks) > 0
 
-    system_prompt = (
-        "Always answer in Turkish. Use short explanatory language. "
-        "Only answer using provided material context. "
-        "If answer does not exist in context reply exactly: "
-        "Bu materyaller icinde buna dair bilgi bulamadim. "
-        "Do not hallucinate and keep response within 5-6 sentences."
-        if has_context
-        else "Always answer in Turkish. Use educational and practical explanations."
-    )
+    if has_context:
+        system_prompt = (
+            "Sen bir eğitim asistanısın. "
+            "SADECE aşağıda verilen MATERYAL BAĞLAMI bölümündeki bilgileri kullanarak yanıt ver. "
+            "Yanıtlarını Türkçe, açıklayıcı ve anlaşılır bir dille yaz. "
+            "Hangi kaynaktan bilgi aldığını yanıtında belirt: örn. [Kaynak 1: dosyaadı]. "
+            "Eğer sorunun cevabı materyallerde yoksa tam olarak şunu yaz: "
+            "'Bu materyaller içinde buna dair bilgi bulamadım.' "
+            "Materyalde olmayan bilgileri kesinlikle uydurma."
+        )
+    else:
+        system_prompt = (
+            "Sen bir eğitim asistanısın. "
+            "Soruları Türkçe, açıklayıcı ve eğitici bir şekilde yanıtla. "
+            "Gerektiğinde örnekler ver."
+        )
 
     role = user.get("role")
     if role == "admin":
@@ -215,13 +229,24 @@ def embed_texts(texts: list[str] | None = None):
     if not cleaned:
         return []
 
-    try:
-        return _request_embeddings(cleaned)
-    except ApiError as error:
-        if error.code == "OLLAMA_RUNNER_TERMINATED" or is_runner_terminated_message(error.message):
-            time.sleep(0.75)
-            return _request_embeddings(cleaned)
-        raise
+    # Process in batches to prevent Ollama timeouts on large documents
+    all_embeddings: list = []
+    for batch_start in range(0, len(cleaned), _EMBED_BATCH_SIZE):
+        batch = cleaned[batch_start: batch_start + _EMBED_BATCH_SIZE]
+        try:
+            batch_result = _request_embeddings(batch)
+        except ApiError as error:
+            if error.code == "OLLAMA_RUNNER_TERMINATED" or is_runner_terminated_message(error.message):
+                time.sleep(0.75)
+                batch_result = _request_embeddings(batch)
+            else:
+                raise
+        all_embeddings.extend(batch_result)
+        # Brief pause between batches so Ollama runner stays healthy
+        if batch_start + _EMBED_BATCH_SIZE < len(cleaned):
+            time.sleep(0.1)
+
+    return all_embeddings
 
 
 def generate_reply(message: str, user: dict | None = None, context_chunks: list[dict] | None = None, course_name: str = "") -> str:
@@ -236,7 +261,7 @@ def generate_reply(message: str, user: dict | None = None, context_chunks: list[
         "prompt": prompt,
         "stream": False,
         "options": {
-            "temperature": 0.4,
+            "temperature": 0.3,
             "num_predict": max(OLLAMA_NUM_PREDICT, 64),
         },
     }

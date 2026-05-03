@@ -114,11 +114,15 @@ export default function ChatbotPage() {
       }
 
       const reply = typeof data?.reply === "string" ? data.reply : "";
+      const sources = Array.isArray(data?.rag?.sources)
+        ? (data.rag.sources as string[])
+        : [];
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
           text: reply || "Şu an yanıt üretemedim, tekrar dener misin?",
+          sources,
         },
       ]);
     } catch (err) {
@@ -198,6 +202,19 @@ export default function ChatbotPage() {
                 }`}
               >
                 <p className="leading-relaxed">{msg.text}</p>
+                {msg.role === "ai" && msg.sources && msg.sources.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-1">
+                    {msg.sources.map((src, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full"
+                      >
+                        <span>📎</span>
+                        {src}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
