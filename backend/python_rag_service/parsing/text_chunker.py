@@ -25,30 +25,45 @@ from ..config import RAG_CHUNK_OVERLAP_SENTENCES, RAG_CHUNK_SIZE
 
 
 # ---------------------------------------------------------------------------
-# Sentence tokenizer (NLTK with graceful fallback)
+# Sentence tokenizer singleton — loaded once, reused for every block
 # ---------------------------------------------------------------------------
 
-def _tokenize_sentences(text: str) -> list[str]:
-    """Split text into sentences using NLTK punkt, falling back to regex."""
+_SENTENCE_TOKENIZER = None
+_SENTENCE_TOKENIZER_LOADED = False
+
+
+def _get_sentence_tokenizer():
+    """Return the NLTK sentence tokenizer, loading it once on first use."""
+    global _SENTENCE_TOKENIZER, _SENTENCE_TOKENIZER_LOADED
+    if _SENTENCE_TOKENIZER_LOADED:
+        return _SENTENCE_TOKENIZER
+
     try:
         import nltk  # type: ignore
 
-        try:
-            tokenizer = nltk.data.load("tokenizers/punkt_tab/turkish.pickle")
-        except Exception:
+        for model_path in [
+            "tokenizers/punkt_tab/turkish.pickle",
+            "tokenizers/punkt/turkish.pickle",
+            "tokenizers/punkt_tab/english.pickle",
+            "tokenizers/punkt/english.pickle",
+        ]:
             try:
-                tokenizer = nltk.data.load("tokenizers/punkt/turkish.pickle")
+                _SENTENCE_TOKENIZER = nltk.data.load(model_path)
+                break
             except Exception:
-                tokenizer = None
-
-        if tokenizer:
-            return tokenizer.tokenize(text)
-
-        # punkt_tab Turkish not available — use English model (works fine for
-        # Turkish sentence boundaries which also end with . ! ?)
-        return nltk.sent_tokenize(text)
+                continue
     except ImportError:
         pass
+
+    _SENTENCE_TOKENIZER_LOADED = True
+    return _SENTENCE_TOKENIZER
+
+
+def _tokenize_sentences(text: str) -> list[str]:
+    """Split text into sentences using NLTK punkt singleton, falling back to regex."""
+    tokenizer = _get_sentence_tokenizer()
+    if tokenizer is not None:
+        return tokenizer.tokenize(text)
 
     # Regex fallback — split on . ! ? followed by whitespace
     parts = re.split(r"(?<=[.!?])\s+", text.strip())

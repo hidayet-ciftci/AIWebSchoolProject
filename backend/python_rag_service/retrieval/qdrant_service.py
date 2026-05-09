@@ -142,13 +142,23 @@ def query_chunks(
 # Upsert
 # ---------------------------------------------------------------------------
 
+_UPSERT_BATCH_SIZE = 200
+
+
 def upsert_chunks(points: list[dict]) -> None:
     """
-    Upsert a list of points into the collection.
+    Upsert a list of points into the collection in batches.
 
     Each point dict must contain:
         id (str), vector (list[float]), payload (dict)
+
+    Points are sent in batches of _UPSERT_BATCH_SIZE with wait=False so
+    HNSW indexing runs asynchronously and does not block ingestion.
+    The final batch uses wait=True to ensure all writes are committed.
     """
+    if not points:
+        return
+
     client = _get_client()
 
     qdrant_points = [
@@ -161,11 +171,17 @@ def upsert_chunks(points: list[dict]) -> None:
     ]
 
     try:
-        client.upsert(
-            collection_name=QDRANT_COLLECTION,
-            points=qdrant_points,
-            wait=True,
-        )
+        batches = [
+            qdrant_points[i : i + _UPSERT_BATCH_SIZE]
+            for i in range(0, len(qdrant_points), _UPSERT_BATCH_SIZE)
+        ]
+        for idx, batch in enumerate(batches):
+            is_last = idx == len(batches) - 1
+            client.upsert(
+                collection_name=QDRANT_COLLECTION,
+                points=batch,
+                wait=is_last,  # only block on the final batch
+            )
     except Exception as exc:
         raise ApiError("Qdrant upsert failed.", 502) from exc
 
