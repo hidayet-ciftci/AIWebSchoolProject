@@ -134,7 +134,9 @@ export function useChatMessages(
         for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed.startsWith("data:")) continue;
-          const data = trimmed.slice(5).trim();
+          // Per SSE spec: strip exactly one leading space after "data:" — preserve the rest
+          const raw = trimmed.slice(5);
+          const data = raw.startsWith(" ") ? raw.slice(1) : raw;
 
           if (data.startsWith("[META]")) {
             try {

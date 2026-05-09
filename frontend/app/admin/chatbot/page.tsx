@@ -157,7 +157,7 @@ export default function AdminChatbotPage() {
                     : "bg-white text-[#1a202c]"
                 }`}
               >
-                <p className="leading-relaxed whitespace-pre-wrap">
+                <p className="leading-relaxed whitespace-pre-wrap break-words">
                   {msg.text}
                   {msg.streaming && (
                     <span className="inline-block w-2 h-4 ml-1 bg-current opacity-70 animate-pulse" />

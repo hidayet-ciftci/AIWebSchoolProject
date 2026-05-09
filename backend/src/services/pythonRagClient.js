@@ -189,7 +189,9 @@ async function streamPythonReply(
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith("data:")) continue;
-        const data = trimmed.slice(5).trim();
+        // Per SSE spec: strip exactly one leading space after "data:" — preserve the rest
+        const raw = trimmed.slice(5);
+        const data = raw.startsWith(" ") ? raw.slice(1) : raw;
         if (data === "[DONE]") {
           res.write("data: [DONE]\n\n");
           return;
@@ -200,7 +202,8 @@ async function streamPythonReply(
 
     // Flush any remaining buffer
     if (buffer.trim().startsWith("data:")) {
-      const data = buffer.trim().slice(5).trim();
+      const raw = buffer.trim().slice(5);
+      const data = raw.startsWith(" ") ? raw.slice(1) : raw;
       if (data && data !== "[DONE]") res.write(`data: ${data}\n\n`);
     }
     res.write("data: [DONE]\n\n");
