@@ -1,350 +1,185 @@
 # AIWebSchoolProject
 
-Okul yönetimi ile yapay zeka destekli öğrenmeyi aynı platformda birleştiren full-stack bir web uygulaması.  
-Öğretmenler ders materyali yükler, öğrenciler o materyale dayalı sorular sorar, sistem RAG mimarisiyle ilgili bağlamı bulup Ollama üzerinde yerel LLM ile Türkçe yanıt üretir.
+Okul yönetimi ile yapay zeka destekli öğrenmeyi aynı platformda birleştiren full-stack web uygulaması.
+Öğretmenler ders materyali yükler; öğrenciler o materyale dayalı soru sorar. Sistem hibrit RAG mimarisiyle (BM25 + semantic embedding + CrossEncoder reranker) ilgili bağlamı bulup yerel Ollama LLM ile Türkçe yanıt üretir ve SSE streaming ile token-token gösterir.
 
----
-
-## çindekiler
-
-- [Proje Nedir?](#proje-nedir)
-- [Teknoloji Yığını](#teknoloji-yığını)
-- [Paketler](#paketler)
-- [Mimari](#mimari)
-- [RAG Sistemi Detaylı Akışı](#rag-sistemi-detaylı-akışı)
-- [Kullanıcı Rolleri ve Ekranlar](#kullanıcı-rolleri-ve-ekranlar)
-- [Özellikler](#özellikler)
-- [Kurulum](#kurulum)
-- [Servisleri Başlatma](#servisleri-başlatma)
-- [Ortam Değişkenleri (.env)](#ortam-değişkenleri-env)
-- [Güncel Durum](#güncel-durum)
-- [Bilinen Sorunlar ve Çözümler](#bilinen-sorunlar-ve-çözümler)
-- [Yol Haritası](#yol-haritası)
-
----
-
-## Proje Nedir?
-
-AIWebSchoolProject şu amaçlar için tasarlanmıştır:
-
-- Okul süreçlerini tek panelden yönetmek
-- Öğretmenlerin ders ve materyal yükleyebilmesini sağlamak
-- Öğrencilerin ders içeriklerine ve sınavlara erişebilmesini sağlamak
-- PDF, DOCX ve TXT materyallerden bilgi çekerek yapay zeka destekli soru-cevap deneyimi sunmak (RAG)
-- Tüm yanıtları yerel Ollama LLM ile üretmek; harici bir API'ye bağımlılık olmaksızın
+> Mimari detaylar → [ARCHITECTURE.md](ARCHITECTURE.md) | AI pipeline detayları → [RAG_PIPELINE.md](RAG_PIPELINE.md)
 
 ---
 
 ## Teknoloji Yığını
 
-| Katman        | Teknoloji                                                            |
-| ------------- | -------------------------------------------------------------------- |
-| Frontend      | Next.js 15, React 19, TypeScript, Tailwind CSS, React Hot Toast      |
-| Backend       | Node.js, Express.js (port 5000)                                      |
-| Veritabanı    | MongoDB Atlas (bulut)                                                |
-| Auth          | JWT                                                                  |
-| LLM           | Ollama — model: `llama3:latest`                                      |
-| Embedding     | Ollama — model: `nomic-embed-text:latest`                            |
-| Vector DB     | ChromaDB (port 8000) — koleksiyon: `course_materials`, cosine mesafe |
-| RAG Servisi   | Python FastAPI (port 8001)                                           |
-| Dosya Parse   | PyMuPDF (`fitz`) — PDF, DOCX, TXT                                    |
-| Kuyruk        | Local async fallback (`setImmediate`) veya BullMQ + Redis            |
-| Dosya Yükleme | Multer                                                               |
+| Katman        | Teknoloji                                                                     |
+| ------------- | ----------------------------------------------------------------------------- |
+| Frontend      | Next.js 15, React 19, TypeScript, Tailwind CSS, React Hot Toast               |
+| Backend       | Node.js, Express.js (port 5000)                                               |
+| Veritabanı    | MongoDB Atlas                                                                 |
+| Auth          | JWT                                                                           |
+| LLM           | Ollama — `llama3` (port 11434)                                                |
+| Embedding     | sentence-transformers — `intfloat/multilingual-e5-base` (768 boyut)           |
+| Reranker      | sentence-transformers — `cross-encoder/ms-marco-MiniLM-L-6-v2`                |
+| Keyword Arama | BM25Okapi (`rank-bm25`) — Türkçe tokenizer                                    |
+| Vector DB     | Qdrant (port 6333, Docker) — koleksiyon: `course_materials`                   |
+| RAG Servisi   | Python FastAPI (port 8001)                                                    |
+| Streaming     | SSE (Server-Sent Events)                                                      |
+| Dosya Parse   | PyMuPDF (`fitz`) — PDF; docx2txt — DOCX                                       |
+| Kuyruk        | Local async fallback (`setImmediate`) veya BullMQ + Redis (port 6379, Docker) |
 
 ---
 
-## Paketler
+## Kullanıcı Rolleri
 
-### Frontend — `frontend/package.json`
-
-| Paket                 | Kullanım                      |
-| --------------------- | ----------------------------- |
-| `next`                | React framework, routing, SSR |
-| `react` / `react-dom` | UI kütüphanesi                |
-| `typescript`          | Tip güvenliği                 |
-| `tailwindcss`         | Utility-first CSS             |
-| `react-hot-toast`     | Toast bildirimleri            |
-
-### Backend (Node.js) — `backend/package.json`
-
-| Paket          | Versiyon | Kullanım                             |
-| -------------- | -------- | ------------------------------------ |
-| `express`      | ^5.1.0   | HTTP sunucu, routing                 |
-| `mongoose`     | ^9.0.0   | MongoDB ORM                          |
-| `jsonwebtoken` | ^9.0.2   | JWT token üretimi/doğrulanması       |
-| `bcryptjs`     | ^3.0.3   | Şifre hashleme                       |
-| `multer`       | ^2.0.2   | Multipart dosya yükleme              |
-| `cors`         | ^2.8.5   | Cross-origin request yönetimi        |
-| `dotenv`       | ^17.2.3  | `.env` değişken yükleme              |
-| `bullmq`       | ^5.73.5  | Redis tabanlı iş kuyruğu (opsiyonel) |
-| `ioredis`      | ^5.10.1  | Redis bağlantısı (BullMQ için)       |
-| `nodemon`      | ^3.1.11  | Dev modunda otomatik restart         |
-
-### Backend (Python RAG Servisi) — `python_rag_service/requirements.txt`
-
-| Paket              | Kullanım                                        |
-| ------------------ | ----------------------------------------------- |
-| `fastapi==0.115.9` | HTTP API framework                              |
-| `uvicorn`          | ASGI sunucu (FastAPI’yi çalıştırır)             |
-| `pymongo`          | MongoDB bağlantısı (Python tarafı)              |
-| `chromadb==1.0.10` | Vector DB istemcisi                             |
-| `requests`         | Ollama’ya HTTP istekleri                        |
-| `PyMuPDF>=1.23.0`  | PDF parse — sayfa/blok düzeyinde metin çıkarımı |
-| `docx2txt`         | DOCX parse                                      |
-| `python-multipart` | FastAPI form/dosya yükleme desteği              |
-| `pydantic`         | Request/response şema validasyonu               |
-
-> **Önemli:** `chromadb==1.0.10` sürümü `fastapi==0.115.9` gerektirir. Daha yüksek fastapi sürümleri pip çakışmasına neden olur.
-
-### Harici Servisler (paket değil, kurulum gerekir)
-
-| Servis                    | Port  | Kullanım                                                             |
-| ------------------------- | ----- | -------------------------------------------------------------------- |
-| Ollama                    | 11434 | Yerel LLM çalıştırma ortamı                                          |
-| `llama3:latest`           | —     | Türkçe yanıt üretimi                                                 |
-| `nomic-embed-text:latest` | —     | Metin → vektör dönüşümü (embedding)                                  |
-| ChromaDB                  | 8000  | Vektör veritabanı                                                    |
-| MongoDB Atlas             | —     | Kullanıcı, kurs, sınav, not verileri                                 |
-| Redis _(opsiyonel)_       | 6380  | BullMQ kuyruğu için — `QUEUE_PROVIDER=local` kullanılıyorsa gerekmez |
+| Rol          | Yapabilecekleri                                                                       |
+| ------------ | ------------------------------------------------------------------------------------- |
+| **Admin**    | Kullanıcı & sistem yönetimi, tüm kurslara erişim, chatbot                             |
+| **Öğretmen** | Kurs oluşturma, materyal yükleme (PDF/DOCX/TXT), sınav oluşturma, not girişi, chatbot |
+| **Öğrenci**  | Kayıtlı dersleri görüntüleme, materyallere erişim, sınava girme, not görme, chatbot   |
 
 ---
 
-## Mimari
+## Ön Gereksinimler
 
-```
-[Kullanıcı (Browser)]
-        │
-        ▼
-[Next.js Frontend :3000]
-        │  REST API
-        ▼
-[Node.js / Express Backend :5000]
-        │                    │
-        │ Sorgu akışı        │ ngestion akışı
-        ▼                    ▼
-[Python FastAPI RAG :8001]  [Kuyruk → Python FastAPI]
-        │                         │
-        ├── ChromaDB :8000 ◄───────┘  (embedding kaydet / sorgula)
-        └── Ollama :11434            (embedding üret / yanıt üret)
-```
-
-### Upload & Ingestion Akışı
-
-1. Öğretmen dosya yükler
-2. Node.js dosyayı `uploads/` klasörüne kaydeder, MongoDB'de materyal kaydı oluşturur
-3. ş kuyruğuna eklenir (local mod: `setImmediate`)
-4. Python RAG servisi dosyayı alır, PyMuPDF ile metni çıkarır
-5. Metin chunk'lara ayrılır
-6. Her chunk için Ollama ile embedding üretilir (8'li batch, aralarında 0.1s bekleme)
-7. Embedding'ler ChromaDB'ye kaydedilir
-8. Materyal durumu `pending → processing → ready` olarak güncellenir
-
-### Soru-Cevap Akışı
-
-1. Kullanıcı ders seçer ve soru sorar
-2. Backend erişim kontrolü yapar
-3. Python RAG servisi soruyu embedding'e çevirir
-4. ChromaDB'de o derse ait en alakalı chunk'lar bulunur (top-k: 6, max mesafe: 0.65)
-5. Bulunan chunk'lar prompt bağlamı olarak Ollama'ya gönderilir
-6. Ollama Türkçe yanıt üretir (num_predict: 400, temperature: 0.3)
-7. Yanıt frontend'e döner
+| Araç           | Notlar                                                 |
+| -------------- | ------------------------------------------------------ |
+| Node.js ≥ 18   | Frontend + backend için                                |
+| Python ≥ 3.10  | 3.13 test edildi                                       |
+| Docker Desktop | Qdrant + Redis container'ları için — çalışıyor olmalı  |
+| Ollama         | `llama3` modeli çekilmiş olmalı (`ollama pull llama3`) |
+| MongoDB Atlas  | Bağlantı dizesi `.env`'de tanımlı olmalı               |
 
 ---
 
-## RAG Sistemi Detaylı Akışı
-
-> Node.js hiçbir zaman doğrudan Ollama veya ChromaDB'ye bağlanmaz. Tüm AI işi Python FastAPI servisine delege edilir.
-
-### Dosya Yükleme → Vektör Kaydetme
-
-```
-Öğretmen dosya yükler (PDF / DOCX / TXT)
-  ↓
-Multer → backend/uploads/notes/ dizinine kaydeder
-  ↓
-courseController.js → MongoDB'ye materyal kaydı oluşturur (status: "pending")
-  ↓
-ragIngestionQueue.js → setImmediate() ile async kuyruğa ekler
-  ↓
-ingestionProcessor.js → pythonRagClient.ingestMaterial() çağırır
-  ↓
-Python FastAPI /api/rag/ingest
-  ↓
-  ├─ document_parser.py  → PyMuPDF (PDF), docx2txt (DOCX), UTF-8 (TXT)
-  │                        → metin normalize edilir, SHA-256 hash alınır
-  │                        → aynı hash'te duplicate kontrolü yapılır
-  ├─ text_chunker.py     → paragraf sınırlarına göre chunk'lara bölünür
-  │                        → chunk boyutu: ~1000 karakter, overlap: ~200
-  ├─ ollama_service.py   → her chunk için Ollama nomic-embed-text
-  │                        → 8'li batch, batch'ler arası 0.1s bekleme
-  │                        → hata durumunda 0.75s bekle + 1 retry
-  └─ chroma_service.py   → ChromaDB'ye upsert
-                           → metadata: courseId, materialId, fileName, chunkIndex
-  ↓
-MongoDB'de status: "ready", chunksCount güncellenir
-```
-
-### Soru-Cevap Detayı
-
-```
-Kullanıcı soru yazar, ders seçer
-  ↓
-POST /chat  (Bearer JWT token)
-  ↓
-chat.js → verifyToken kontrolü
-  ↓
-ragService.js → getPythonRagContext() → Python /api/rag/context
-  ↓
-  ├─ rag_service.py → kurs erişim kontrolü (admin / öğretmen / öğrenci)
-  ├─ Ollama'ya soruyu embed ettirir (nomic-embed-text)
-  ├─ ChromaDB'ye "bu kursa ait, en yakın 6 chunk getir" sorgusu
-  └─ Mesafe filtresi: 0.65'ten uzak chunk'lar elenir
-        → Sonuç yoksa: useRag: false, fallback genel chatbot
-  ↓
-llmService.js → generatePythonReply() → Python /api/llm/generate
-  ↓
-  ├─ ollama_service.py → build_prompt()
-  │     → Sistem promptu (Türkçe, sadece materyaldeki bilgiyi kullan)
-  │     → Kullanıcı rolü + ders adı
-  │     → Bulunan chunk'lar MATERYAL BAĞCAMI bloğu olarak eklenir
-  │     → max 5000 karakter bağlam limiti
-  ├─ Ollama llama3:latest modeline gönderilir
-  │     → temperature: 0.3, max token: 400, stream: false
-  └─ Hata: runner terminated → 0.75s bekle + 1 retry
-  ↓
-Backend yanıtı döner: { reply, rag: { used, reason, sourceCount } }
-  ↓
-Frontend mesaj olarak gösterir
-```
-
-### Materyal Silme
-
-```
-DELETE /api/courses/:id/materials/:materialId
-  ↓
-  ├─ ChromaDB'den o materialId'ye ait tüm chunk'lar silinir
-  ├─ uploads/notes/ dizininden fiziksel dosya silinir
-  └─ MongoDB'den materyal kaydı kaldırılır
-```
-
-### Fallback Durumları
-
-| Durum                          | Sonuç                                       |
-| ------------------------------ | ------------------------------------------- |
-| Kurs seçilmemiş                | Direkt LLM'e genel sohbet sorusu gider      |
-| Kurs seçili ama materyal yok   | `no-results` → fallback genel cevap         |
-| Materyal var ama soru alakasız | `low-similarity` (mesafe > 0.65) → fallback |
-| Python servisi kapalı          | Node `503 Service Unavailable` döner        |
-| Ollama yanıt vermez            | `504 Gateway Timeout` döner                 |
-| Ollama runner çökerse          | 0.75s bekle + otomatik 1 retry              |
-
----
-
-## Kullanıcı Rolleri ve Ekranlar
-
-### Admin
-
-- Kullanıcı ve sistem yönetimi
-- Tüm kurslara erişim
-- Chatbot (RAG destekli)
-- Profil
-
-### Öğretmen
-
-- Kurs oluşturma ve yönetimi
-- Ders materyali yükleme (PDF, DOCX, TXT)
-- Sınav oluşturma
-- Not girişi
-- Chatbot (RAG destekli)
-- Profil
-
-### Öğrenci
-
-- Kayıtlı dersleri görüntüleme ve materyallere erişim
-- Sınava girme
-- Notlarını görme
-- Chatbot — ders seçerek o materyale dayalı soru sorma (RAG)
-- Profil
-
----
-
-## Özellikler
-
-### Tamamlananlar ✅
-
-- **Rol tabanlı kimlik doğrulama**: JWT ile admin/öğretmen/öğrenci panelleri
-- **Kurs yönetimi**: oluşturma, listeleme, materyal yükleme, silme
-- **Sınav & not sistemi**: sınav oluşturma, öğrenci yanıtları, not girişi
-- **Chatbot**: Ollama ile Türkçe sohbet, tüm rol panellerinde aktif
-- **RAG altyapısı**: materyal yükleme → chunk → embed → ChromaDB → retrieval → yanıt
-- **PDF desteği**: PyMuPDF ile sayfa/blok düzeyinde metin çıkarımı
-- **Embedding batching**: 8'li gruplar, OOM/crash önleme
-- **Sohbet geçmişi kalıcılığı**: mesajlar `localStorage`'da saklanır
-- **Mesaj doğrulama**: 2000 karakter sınırı (413 hatası)
-- **Materyal durum takibi**: `pending`, `processing`, `ready`, `failed`
-- **Queue hata loglama**: kuyruk hataları konsola ayrıntılı yazılır
-- **Model cache TTL**: 5 dakika, crash sonrası yeniden çözümleme
-- **ngestion timeout**: 5 dakika (büyük dosyalar için)
-- **Fallback**: Ders bağlamı bulunamazsa genel chatbot cevabı döner
-
----
-
-## Kurulum
-
-### Ön Koşullar
-
-- Node.js ≥ 18
-- Python ≥ 3.10 (`.venv` workspace içinde)
-- Ollama kurulu ve çalışıyor olmalı
-- ChromaDB kurulu olmalı (`pip install chromadb`)
-- MongoDB Atlas bağlantısı
-
-### 1) Depoyu Klonla
+## Kurulum (İlk Kez)
 
 ```powershell
-git clone <repo-url>
-cd AIWebSchoolProject
-```
-
-### 2) Python Sanal Ortamı Oluştur
-
-```powershell
+# 1. Python sanal ortamı oluştur (proje kökünde)
 python -m venv .venv
-```
 
-### 3) Python Bağımlılıklarını Kur
-
-```powershell
+# 2. Python bağımlılıklarını kur
 cd backend
 ..\.venv\Scripts\python.exe -m pip install -r python_rag_service/requirements.txt
-```
 
-Gerekli paketler: `fastapi`, `uvicorn`, `pymongo`, `chromadb`, `requests`, `PyMuPDF>=1.23.0`, `docx2txt`, `python-multipart`
+# 3. NLTK tokenizer'ı indir (bir kere yeterli)
+..\.venv\Scripts\python.exe -c "import nltk; nltk.download('punkt_tab'); nltk.download('punkt')"
 
-### 4) Node Bağımlılıklarını Kur
-
-```powershell
-# Backend
-cd backend
+# 4. Node bağımlılıklarını kur
 npm install
+cd ..\frontend ; npm install
 
-# Frontend
-cd ../frontend
-npm install
-```
-
-### 5) Ollama Modellerini ndir
-
-```powershell
+# 5. Ollama modelini çek (4.3 GB — bir kez indirilir)
 ollama pull llama3
-ollama pull nomic-embed-text
 ```
 
-### 6) .env Dosyasını Oluştur
+> `intfloat/multilingual-e5-base` (~1.1 GB) ve `cross-encoder/ms-marco-MiniLM-L-6-v2` (~90 MB)
+> Python servisi **ilk başlatılırken** HuggingFace cache'e otomatik indirilir.
 
-`backend/.env` dosyası (bkz. [Ortam Değişkenleri](#ortam-değişkenleri-env))
+---
 
-`frontend/.env.local`:
+## Servisleri Başlatma
+
+**5 ayrı terminalde sırayla başlatılır:**
+
+### Terminal 1 — Docker (Qdrant + Redis)
+
+```powershell
+# Proje kökünden
+docker compose up qdrant redis -d
+```
+
+Sağlık kontrolü: `http://localhost:6333/healthz`
+
+### Terminal 2 — Ollama
+
+```powershell
+ollama serve
+```
+
+### Terminal 3 — Python RAG Servisi
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn python_rag_service.main:app --host 0.0.0.0 --port 8001
+```
+
+> **Önemli:** Komut mutlaka `backend/` dizininden çalıştırılmalı — `python_rag_service/` içinden değil.
+> `config.py` `.env` dosyasını parent dizinden okur.
+
+Sağlık kontrolü: `http://localhost:8001/health` → `{"ok": true}`
+
+### Terminal 4 — Node.js Backend
+
+```powershell
+cd backend
+npm run dev
+```
+
+### Terminal 5 — Next.js Frontend
+
+```powershell
+cd frontend
+npm run dev
+```
+
+Uygulama: `http://localhost:3000`
+
+---
+
+## Ortam Değişkenleri
+
+`backend/.env` dosyası oluştur:
+
+```env
+# Temel
+PORT=5000
+FRONTEND_URL=http://localhost:3000
+MONGO_URI=<MongoDB Atlas bağlantı dizesi>
+MONGO_DB_NAME=test
+MONGO_COURSE_COLLECTION=courses
+JWT_SECRET=<güçlü rastgele değer>
+
+# Ollama (sadece yanıt üretimi — embedding sentence-transformers ile yapılıyor)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+OLLAMA_GENERATE_TIMEOUT_MS=90000
+OLLAMA_RAG_TIMEOUT_MS=120000
+OLLAMA_NUM_PREDICT=600
+
+# Qdrant
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION=course_materials
+
+# Embedding
+EMBED_MODEL=intfloat/multilingual-e5-base
+EMBED_DIMENSION=768
+EMBED_BATCH_SIZE=32
+
+# Reranker
+RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+
+# BM25 & Hybrid Retrieval
+BM25_K1=1.5
+BM25_B=0.75
+HYBRID_ALPHA=0.6
+RAG_CANDIDATE_K=25
+RAG_FINAL_K=5
+RERANK_THRESHOLD=0.0
+RAG_CONTEXT_CHAR_LIMIT=6000
+RAG_CONTEXT_SOURCES=5
+RAG_CHUNK_SIZE=600
+RAG_CHUNK_OVERLAP_SENTENCES=2
+
+# Python RAG servisi (Node → FastAPI köprüsü)
+PY_RAG_SERVICE_URL=http://127.0.0.1:8001
+PY_RAG_SHARED_SECRET=<güçlü paylaşılan gizli anahtar>
+PY_RAG_TIMEOUT_MS=120000
+PY_RAG_INGEST_TIMEOUT_MS=300000
+
+# Kuyruk (local: Redis gerekmez; bullmq: Redis zorunlu)
+QUEUE_PROVIDER=local
+REDIS_URL=redis://127.0.0.1:6379
+```
+
+`frontend/.env.local` dosyası oluştur:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
@@ -352,200 +187,14 @@ NEXT_PUBLIC_API_URL=http://localhost:5000
 
 ---
 
-## Servisleri Başlatma
+## Bilinen Sorunlar
 
-**Sıralı olarak başlatılmalıdır:**
-
-### 1) ChromaDB
-
-```powershell
-# Proje kökünden
-chroma run --path ./chroma_db --host localhost --port 8000
-```
-
-### 2) Python RAG Servisi
-
-```powershell
-cd backend
-npm run rag:python
-```
-
-Sağlık kontrolü:
-
-```powershell
-Invoke-WebRequest -Uri http://127.0.0.1:8001/health -Method Get
-# Beklenen: HTTP 200, {"ok": true}
-```
-
-### 3) Node.js Backend
-
-```powershell
-cd backend
-npm run dev
-```
-
-### 4) Next.js Frontend
-
-```powershell
-cd frontend
-npm run dev
-```
-
-> **Not:** `QUEUE_PROVIDER=local` modunda ayrı bir worker başlatmak **gerekmez**.  
-> BullMQ/Redis modu kullanılacaksa: `npm run dev:worker`
-
----
-
-## Ortam Değişkenleri (.env)
-
-`backend/.env` dosyasında tanımlanması gereken değişkenler:
-
-```env
-# Temel
-PORT=5000
-FRONTEND_URL=http://localhost:3000
-MONGO_URI=<MongoDB Atlas bağlantı dizesi>
-JWT_SECRET=<güçlü rastgele değer>
-
-# Ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3:latest
-OLLAMA_EMBED_MODEL=nomic-embed-text:latest
-OLLAMA_EMBED_TIMEOUT_MS=90000
-OLLAMA_NUM_PREDICT=400
-
-# ChromaDB
-CHROMA_URL=http://localhost:8000
-CHROMA_COLLECTION=course_materials
-
-# RAG parametreleri
-RAG_TOP_K=6
-RAG_MAX_DISTANCE=0.65
-RAG_CONTEXT_SOURCES=4
-RAG_CONTEXT_CHAR_LIMIT=5000
-
-# Python RAG servisi
-PY_RAG_SERVICE_URL=http://127.0.0.1:8001
-PY_RAG_TIMEOUT_MS=120000
-PY_RAG_INGEST_TIMEOUT_MS=300000
-
-# Kuyruk
-QUEUE_PROVIDER=local
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6380
-```
-
----
-
-## Güncel Durum
-
-**Son güncelleme: Mayıs 2026**
-
-Sistem temel uçtan uca akışla çalışır durumdadır. Mevcut başarı kriterleri:
-
-| Kriter                       | Durum        |
-| ---------------------------- | ------------ |
-| Materyal yükleme & ingestion | ✅ Çalışıyor |
-| Materyal durum takibi        | ✅ Çalışıyor |
-| Chunk üretimi                | ✅ Çalışıyor |
-| ChromaDB sorgusu             | ✅ Çalışıyor |
-| Ders bazlı RAG yanıtı        | ✅ Çalışıyor |
-| Fallback (bağlam yoksa)      | ✅ Çalışıyor |
-| PDF parse (PyMuPDF)          | ✅ Çalışıyor |
-
----
-
-## Bilinen Sorunlar ve Çözümler
-
-| Sorun                                            | Neden                                                  | Çözüm                                                                                              |
-| ------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Ollama "runner process has terminated"           | RAM/VRAM yetersizliği veya ilk çalıştırma kararsızlığı | Backend 1 otomatik retry yapar; devam ederse Ollama'yı yeniden başlat veya daha küçük model kullan |
-| ChromaDB bağlantı hatası                         | `localhost` bazen IPv6 `[::1]`'e çözümleniyor          | `.env`'de `CHROMA_URL=http://127.0.0.1:8000` dene                                                  |
-| Redis ECONNREFUSED (port 6380)                   | BullMQ bağlantıyı erken kuruyor                        | `QUEUE_PROVIDER=local` kullan (varsayılan)                                                         |
-| ngestion timeout                                 | Çok büyük dosya veya Ollama yavaş                      | Timeout 5 dakikaya çıkarıldı; dosya boyutunu küçük tut                                             |
-| `ModuleNotFoundError: No module named 'fastapi'` | Paketler `.venv`'e kurulmamış                          | `..\.venv\Scripts\python.exe -m pip install -r python_rag_service/requirements.txt`                |
-| `No readable text extracted from file`           | Dosya bozuk veya taranmış PDF                          | Farklı dosya dene; OCR desteği henüz yok                                                           |
-
----
-
-## Yol Haritası
-
-### Yakın Vadeli
-
-- [ ] **Sohbet geçmişi (chat history)**: son N mesajı prompt'a eklemek — konuşma bağlamı iyileştirilir
-- [ ] **Streaming (SSE)**: Ollama `stream: true` → Backend SSE → Frontend yazıyor efekti
-- [ ] **Daha fazla E2E test**: gerçek materyallerle retrieval kalitesini doğrulama
-
-### Orta Vadeli
-
-- [ ] **Rol bazlı farklı sistem prompt'ları**: öğrenci / öğretmen / admin için farklı davranış
-- [ ] **OCR desteği**: taranmış PDF'lerden metin çıkarımı
-- [ ] **Üretim ortamı kurulum kılavuzu**: PM2, Nginx, Docker Compose ile dağıtım
-
-### Uzun Vadeli
-
-- [ ] **Fine-tuning**: Mistral-7B veya benzeri model üzerinde eğitim verisi formatı hazırlığı
-- [ ] **BullMQ + Redis tam entegrasyonu**: ölçeklenebilir kuyruk sistemi
-- [ ] **Görüntü ve tablo desteği**: PDF'lerdeki görsellerin yorumlanması
-
----
-
-## API Özeti
-
-### POST /chat
-
-```json
-// stek
-{ "message": "Newton'un hareket yasaları nelerdir?" }
-
-// Yanıt
-{
-  "reply": "Newton'un üç hareket yasası şunlardır...",
-  "rag": {
-    "used": true,
-    "reason": "ok",
-    "sourceCount": 2
-  }
-}
-```
-
-Auth: `Authorization: Bearer <JWT>`
-
----
-
-## Proje Yapısı
-
-```
-AIWebSchoolProject/
-├── .venv/                          # Python sanal ortamı
-├── chroma_db/                      # ChromaDB yerel veri klasörü
-├── backend/
-│   ├── app.js                      # Express giriş noktası
-│   ├── .env                        # Ortam değişkenleri
-│   ├── python_rag_service/         # FastAPI RAG servisi
-│   │   ├── main.py                 # FastAPI uygulama
-│   │   ├── rag_service.py          # Retrieval & generation
-│   │   ├── ingestion_service.py    # Upload işleme
-│   │   ├── document_parser.py      # PDF/DOCX/TXT parse (PyMuPDF)
-│   │   ├── text_chunker.py         # Metin bölme
-│   │   ├── chroma_service.py       # ChromaDB istemcisi
-│   │   ├── ollama_service.py       # Embedding & LLM
-│   │   ├── config.py               # Tüm RAG parametreleri
-│   │   └── requirements.txt
-│   └── src/
-│       ├── controllers/            # authController, courseController...
-│       ├── middlewares/            # verifyToken, checkRole, logger...
-│       ├── models/                 # User, Course, Exam, Grade
-│       ├── queue/                  # ragIngestionQueue.js
-│       ├── routes/                 # chat.js, authRoutes, examRoutes...
-│       ├── services/               # llmService, pythonRagClient
-│       └── workers/                # ragWorker.js
-└── frontend/
-    ├── app/
-    │   ├── student/                # Öğrenci paneli
-    │   ├── teacher/                # Öğretmen paneli
-    │   └── admin/                  # Admin paneli
-    ├── components/                 # ProfileCard...
-    ├── hooks/                      # useChatMessages, useProfile
-    └── types/
-```
+| Sorun                                            | Neden                                              | Çözüm                                                                               |
+| ------------------------------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Ollama "runner process has terminated"           | RAM/VRAM yetersizliği                              | Backend 1 otomatik retry yapar; devam ederse Ollama'yı yeniden başlat               |
+| Qdrant 502 / bağlantı hatası                     | Docker çalışmıyor                                  | `docker compose up qdrant -d` → `http://localhost:6333/healthz` kontrol et          |
+| `No module named 'python_rag_service'`           | `python_rag_service/` içinden uvicorn çalıştırıldı | `cd backend` yapıp oradan `python -m uvicorn python_rag_service.main:app` çalıştır  |
+| `ModuleNotFoundError: No module named 'fastapi'` | Paketler `.venv`'e kurulmamış                      | `..\.venv\Scripts\python.exe -m pip install -r python_rag_service/requirements.txt` |
+| Redis ECONNREFUSED                               | Docker çalışmıyor                                  | `QUEUE_PROVIDER=local` kullan veya `docker compose up redis -d`                     |
+| sentence-transformers indirme yavaş              | İlk başlatmada ~1.2 GB indiriliyor                 | HuggingFace cache'e bir kez iner, sonraki başlatmalar hızlı                         |
+| `No readable text extracted from file`           | Dosya bozuk veya taranmış PDF                      | Farklı dosya dene; OCR desteği henüz yok                                            |

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { clearAllChatMessages, useChatMessages } from "@/hooks/useChatMessages";
@@ -15,20 +15,22 @@ export default function TeacherChatbotPage() {
   const router = useRouter();
   const initialAiMessage =
     "Merhaba! Ben AI öğretim asistanınızım. Ders içerikleriniz, sınav hazırlığı veya not girişi konularında yardımcı olabilirim.";
-  const { messages, setMessages } = useChatMessages(
-    "teacher",
-    initialAiMessage,
-  );
+  const { messages, setMessages, isStreaming, sendMessageStream } =
+    useChatMessages("teacher", initialAiMessage);
   const [inputText, setInputText] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) router.push("/");
   }, [router]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -64,7 +66,7 @@ export default function TeacherChatbotPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || isSending) return;
+    if (!inputText.trim() || isStreaming) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -77,58 +79,16 @@ export default function TeacherChatbotPage() {
     }
 
     const userMessage = inputText.trim();
-    setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
     setInputText("");
 
-    try {
-      setIsSending(true);
-      const payload = selectedCourseId
-        ? { message: userMessage, courseId: selectedCourseId }
-        : { message: userMessage };
-
-      const res = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (res.status === 401) {
-        clearAllChatMessages();
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        toast.error("Oturum süreniz doldu. Lütfen tekrar giriş yapın.");
-        router.push("/");
-        return;
-      }
-
-      if (!res.ok) {
-        const msg =
-          (data && (data.message || data.error)) ||
-          "AI yanıtı alınamadı. Lütfen tekrar deneyin.";
-        throw new Error(msg);
-      }
-
-      const reply = typeof data?.reply === "string" ? data.reply : "";
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: reply || "Şu an yanıt üretemedim, tekrar dener misin?",
-        },
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast.error(
-        err instanceof Error ? err.message : "Beklenmedik bir hata oluştu.",
-      );
-    } finally {
-      setIsSending(false);
-    }
+    await sendMessageStream(
+      userMessage,
+      selectedCourseId,
+      `${API_URL}`,
+      token,
+      undefined,
+      (errMsg) => toast.error(errMsg),
+    );
   };
 
   return (
@@ -169,7 +129,7 @@ export default function TeacherChatbotPage() {
             <button
               type="button"
               onClick={handleClearChat}
-              disabled={isSending}
+              disabled={isStreaming}
               className="ml-auto px-4 py-2 border border-red-200 text-red-500 rounded-lg font-semibold hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-60"
             >
               Sohbeti Sil
@@ -196,10 +156,16 @@ export default function TeacherChatbotPage() {
                     : "bg-white text-[#1a202c]"
                 }`}
               >
-                <p className="leading-relaxed">{msg.text}</p>
+                <p className="leading-relaxed whitespace-pre-wrap">
+                  {msg.text}
+                  {msg.streaming && (
+                    <span className="inline-block w-2 h-4 ml-1 bg-current opacity-70 animate-pulse" />
+                  )}
+                </p>
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
         <form
           onSubmit={handleSendMessage}
@@ -210,15 +176,15 @@ export default function TeacherChatbotPage() {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Mesajınızı yazın..."
-            disabled={isSending}
+            disabled={isStreaming}
             className="flex-1 p-3 border-2 border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#667eea] disabled:opacity-60"
           />
           <button
             type="submit"
-            disabled={isSending}
+            disabled={isStreaming}
             className="px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-bold hover:-translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60 disabled:hover:translate-y-0"
           >
-            {isSending ? "Gönderiliyor..." : "Gönder"}
+            {isStreaming ? "Yanıtlanıyor..." : "Gönder"}
           </button>
         </form>
       </div>

@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const Course = require("../models/Course");
 const User = require("../models/User");
 const { enqueueMaterialIngestion } = require("../queue/ragIngestionQueue");
-const { deleteMaterialChunks } = require("../services/rag/chromaService");
+const { deleteMaterialVectors } = require("../services/pythonRagClient");
 
 const getCourses = async (req, res, next) => {
   try {
@@ -192,9 +192,9 @@ const deleteMaterial = async (req, res, next) => {
     }
 
     try {
-      await deleteMaterialChunks({ materialId: String(materialId) });
+      await deleteMaterialVectors(String(materialId));
     } catch (vectorError) {
-      console.error("Chroma silme hatası:", vectorError.message);
+      console.error("Vektör silme hatası:", vectorError.message);
     }
 
     const diskPath = path.join(

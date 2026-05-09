@@ -1,0 +1,53 @@
+version: "3.9"
+
+# Starts the infrastructure services needed by the AI school web app.
+# The Node.js backend, Python FastAPI service, Ollama, and Next.js frontend
+# are expected to run locally (not in Docker) during development.
+#
+# Usage:
+#   docker compose up -d          # start Qdrant + Redis
+#   docker compose down           # stop (data is preserved in named volumes)
+#   docker compose down -v        # stop AND delete all stored data
+
+services:
+  # ── Qdrant ─────────────────────────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333" # HTTP REST + gRPC
+      - "6334:6334" # gRPC (optional; useful for dashboard)
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      # Optional: set a read-only API key for the web dashboard
+      # QDRANT__SERVICE__API_KEY: "changeme"
+      QDRANT__LOG_LEVEL: "INFO"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (BullMQ queue backend) ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  qdrant_storage:
+    driver: local
+  redis_data:
+    driver: local

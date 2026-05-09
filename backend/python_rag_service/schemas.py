@@ -31,3 +31,10 @@ class IngestRequest(BaseModel):
 
 class DeleteMaterialRequest(BaseModel):
     materialId: str
+
+
+class StreamRequest(BaseModel):
+    message: str
+    user: UserCtx | None = None
+    contextChunks: list[dict] = Field(default_factory=list)
+    courseName: str = ""

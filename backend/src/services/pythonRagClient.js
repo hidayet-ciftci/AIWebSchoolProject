@@ -125,10 +125,110 @@ async function deleteMaterialVectors(materialId) {
   return callPythonRag("/api/rag/delete-material", { materialId });
 }
 
+/**
+ * Open a streaming SSE connection to the Python /api/llm/stream endpoint.
+ *
+ * The function fetches the Python SSE stream and pipes each `data: …` line
+ * to the Express SSE response. It resolves when the upstream sends [DONE]
+ * or closes, and rejects on errors.
+ *
+ * @param {Object} params
+ * @param {string} params.message
+ * @param {Object} [params.user]
+ * @param {Array}  [params.contextChunks]
+ * @param {string} [params.courseName]
+ * @param {import('http').ServerResponse} res  - Express SSE response (already has headers set)
+ */
+async function streamPythonReply(
+  { message, user, contextChunks, courseName },
+  res,
+) {
+  const streamTimeoutMs = toPositiveNumber(
+    process.env.PY_RAG_TIMEOUT_MS,
+    120_000,
+  );
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), streamTimeoutMs);
+
+  try {
+    const response = await fetch(`${PY_RAG_SERVICE_URL}/api/llm/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(PY_RAG_SHARED_SECRET
+          ? { "x-rag-secret": PY_RAG_SHARED_SECRET }
+          : {}),
+      },
+      body: JSON.stringify({ message, user, contextChunks, courseName }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      let msg = `Python RAG stream failed with ${response.status}`;
+      try {
+        msg = JSON.parse(text)?.message || msg;
+      } catch {}
+      const err = new Error(msg);
+      err.statusCode = response.status;
+      throw err;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // incomplete last line
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === "[DONE]") {
+          res.write("data: [DONE]\n\n");
+          return;
+        }
+        res.write(`data: ${data}\n\n`);
+      }
+    }
+
+    // Flush any remaining buffer
+    if (buffer.trim().startsWith("data:")) {
+      const data = buffer.trim().slice(5).trim();
+      if (data && data !== "[DONE]") res.write(`data: ${data}\n\n`);
+    }
+    res.write("data: [DONE]\n\n");
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      res.write("data: [ERROR] Stream timeout\n\n");
+      return;
+    }
+    const message = String(error?.message || error);
+    if (
+      message.includes("ECONNREFUSED") ||
+      message.includes("fetch failed") ||
+      message.includes("Failed to fetch")
+    ) {
+      res.write("data: [ERROR] Python RAG service is unreachable\n\n");
+      return;
+    }
+    res.write(`data: [ERROR] ${message}\n\n`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 module.exports = {
   callPythonRag,
   getPythonRagContext,
   generatePythonReply,
   ingestMaterial,
   deleteMaterialVectors,
+  streamPythonReply,
 };

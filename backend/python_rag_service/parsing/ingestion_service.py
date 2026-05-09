@@ -2,12 +2,12 @@ from datetime import datetime, timezone
 
 from bson import ObjectId
 
-from .chroma_service import delete_material_chunks, upsert_document_chunks
-from .config import RAG_CHUNK_OVERLAP, RAG_CHUNK_SIZE
-from .db import get_course_collection
+from ..config import RAG_CHUNK_OVERLAP_SENTENCES, RAG_CHUNK_SIZE
+from ..db import get_course_collection
 from .document_parser import extract_document_text
-from .errors import ApiError
-from .ollama_service import embed_texts
+from ..retrieval.embedding_service import embed_passages
+from ..errors import ApiError
+from ..retrieval.qdrant_service import delete_material_chunks, ensure_collection, upsert_chunks
 from .text_chunker import split_text_into_chunks
 
 
@@ -96,34 +96,38 @@ def process_ingestion_data(job_data: dict):
         return {"skipped": True, "reason": "duplicate"}
 
     chunks = split_text_into_chunks(
-        text,
-        chunk_size=RAG_CHUNK_SIZE,
-        overlap=RAG_CHUNK_OVERLAP,
+        text=text,
+        blocks=parsed.get("blocks"),
+        max_chunk_size=RAG_CHUNK_SIZE,
+        overlap_sentences=RAG_CHUNK_OVERLAP_SENTENCES,
     )
     if not chunks:
         raise ApiError("Document cannot be split into meaningful chunks.", 422)
 
-    embeddings = embed_texts([chunk["text"] for chunk in chunks])
-    ids = [f"{material_id}-{chunk['chunkIndex']}" for chunk in chunks]
-    metadatas = [
+    embeddings = embed_passages([chunk["text"] for chunk in chunks])
+
+    # Build Qdrant point dicts
+    ensure_collection()
+    points = [
         {
-            "courseId": course_id,
-            "materialId": material_id,
-            "fileName": file_name,
-            "page": None,
-            "chunkIndex": chunk["chunkIndex"],
-            "createdAt": _utc_now().isoformat(),
+            "id": f"{material_id}-{chunk['chunkIndex']}",
+            "vector": embeddings[i],
+            "payload": {
+                "text": chunk["text"],
+                "courseId": course_id,
+                "materialId": material_id,
+                "fileName": file_name,
+                "section": chunk.get("section", ""),
+                "page": chunk.get("page"),
+                "chunkIndex": chunk["chunkIndex"],
+                "createdAt": _utc_now().isoformat(),
+            },
         }
-        for chunk in chunks
+        for i, chunk in enumerate(chunks)
     ]
 
     delete_material_chunks(material_id)
-    upsert_document_chunks(
-        ids=ids,
-        documents=[chunk["text"] for chunk in chunks],
-        embeddings=embeddings,
-        metadatas=metadatas,
-    )
+    upsert_chunks(points)
 
     update_material_state(
         course_id,

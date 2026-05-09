@@ -1,13 +1,13 @@
 from fastapi import FastAPI, Header, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
-from .chroma_service import delete_material_chunks
 from .config import PY_RAG_SHARED_SECRET
 from .errors import ApiError
-from .ingestion_service import mark_material_failed, process_ingestion_data
-from .ollama_service import generate_reply
-from .rag_service import get_rag_context
-from .schemas import DeleteMaterialRequest, GenerateRequest, IngestRequest, RagContextRequest
+from .parsing.ingestion_service import mark_material_failed, process_ingestion_data
+from .llm.ollama_service import generate_reply, generate_stream
+from .retrieval.qdrant_service import delete_material_chunks
+from .retrieval.rag_service import get_rag_context
+from .schemas import DeleteMaterialRequest, GenerateRequest, IngestRequest, RagContextRequest, StreamRequest
 
 
 app = FastAPI(title="AIWebSchool Python RAG Service", version="1.0.0")
@@ -65,6 +65,40 @@ def llm_generate(payload: GenerateRequest, x_rag_secret: str | None = Header(def
         course_name=payload.courseName,
     )
     return {"reply": reply}
+
+
+@app.post("/api/llm/stream")
+async def llm_stream(payload: StreamRequest, x_rag_secret: str | None = Header(default=None)):
+    """SSE streaming endpoint — yields tokens as 'data: <token>\\n\\n'."""
+    _verify_secret(x_rag_secret)
+    user = payload.user.model_dump() if payload.user else {}
+
+    async def event_generator():
+        try:
+            async for token in generate_stream(
+                message=payload.message,
+                user=user,
+                context_chunks=payload.contextChunks,
+                course_name=payload.courseName,
+            ):
+                # Escape newlines inside token so SSE framing is not broken
+                safe_token = token.replace("\n", "\\n")
+                yield f"data: {safe_token}\n\n"
+        except ApiError as exc:
+            yield f"data: [ERROR] {exc.message}\n\n"
+        except Exception as exc:
+            yield f"data: [ERROR] {exc}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/api/rag/ingest")
