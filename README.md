@@ -99,6 +99,9 @@ ollama serve
 ```powershell
 cd backend
 ..\.venv\Scripts\python.exe -m uvicorn python_rag_service.main:app --host 0.0.0.0 --port 8001
+
+cd "C:\Users\hidos\Desktop\AI school web app\AIWebSchoolProject\backend"
+uvicorn python_rag_service.main:app --host 0.0.0.0 --port 8001
 ```
 
 > **Önemli:** Komut mutlaka `backend/` dizininden çalıştırılmalı — `python_rag_service/` içinden değil.

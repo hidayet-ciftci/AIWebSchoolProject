@@ -24,12 +24,14 @@ from ..config import RAG_CONTEXT_CHAR_LIMIT, RAG_CONTEXT_SOURCES
 
 _SYSTEM_WITH_CONTEXT = (
     "Sen bir eğitim asistanısın. "
-    "YALNIZCA aşağıda verilen MATERYAL BAĞLAMI bölümündeki bilgileri kullanarak yanıt ver. "
-    "Yanıtlarını Türkçe, akademik ve anlaşılır bir dille yaz. "
+    "Yanıt verirken şu sırayı takip et: "
+    "Önce MATERYAL BAĞLAMI'nda ne yazıyorsa onu doğrudan ve eksiksiz aktar. "
+    "Ardından gerekli görüyorsan kendi açıklama veya yorumunu kısaca ekle. "
+    "Kaynak adı, dosya adı veya sayfa numarası asla belirtme — sadece içeriği yaz. "
     "Eğer sorunun cevabı materyallerde açıkça yer almıyorsa, kesinlikle şunu yaz: "
     "'Bu materyaller içinde buna dair bilgi bulamadım.' "
     "Materyalde olmayan bilgileri kesinlikle tahmin etme veya uydurma. "
-    "Kısa, net ve konuya odaklı yanıtlar ver."
+    "Yanıtlarını Türkçe, akademik ve anlaşılır bir dille yaz."
 )
 
 _SYSTEM_WITHOUT_CONTEXT = (
@@ -83,23 +85,7 @@ def build_context_block(chunks: list[dict]) -> str:
         return ""
 
     lines = ["MATERYAL BAĞLAMI:"]
-    for idx, chunk in enumerate(limited):
-        metadata = chunk.get("metadata") or {}
-        file_name = (
-            chunk.get("fileName")
-            or metadata.get("fileName")
-            or f"Kaynak-{idx + 1}"
-        )
-        section = chunk.get("section") or metadata.get("section") or ""
-        page = chunk.get("page") or metadata.get("page")
-
-        label_parts = [f"[Kaynak {idx + 1}] {file_name}"]
-        if section:
-            label_parts.append(f"Bölüm: {section}")
-        if page is not None:
-            label_parts.append(f"Sayfa: {page}")
-
-        lines.append(", ".join(label_parts))
+    for chunk in limited:
         lines.append(chunk["text"])
         lines.append("")
 
