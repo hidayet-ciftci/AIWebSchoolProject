@@ -13,7 +13,7 @@ export default function CoursesPage() {
           "http://localhost:5000/api/courses/student/my-courses",
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         const data = await res.json();
         setCourses(data);
@@ -33,7 +33,7 @@ export default function CoursesPage() {
             key={course._id}
             className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:-translate-y-1 transition-transform duration-300"
           >
-            <div className="text-3xl mb-4">xa</div>
+            <div className="text-3xl mb-4">🎓</div>
             <h3 className="text-xl font-bold text-[#1a202c] mb-2">
               {course.name}
             </h3>

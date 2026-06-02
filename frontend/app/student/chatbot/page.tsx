@@ -167,32 +167,28 @@ export default function ChatbotPage() {
             </div>
           ))}
           <div ref={messagesEndRef} />
-              </div>
-            </div>
-          ))}
         </div>
-
-        <form
-          onSubmit={handleSendMessage}
-          className="p-6 border-t border-gray-100 flex gap-3"
-        >
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Mesajınızı yazın..."
-            disabled={isStreaming}
-            className="flex-1 p-3 border-2 border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#667eea] transition-colors disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={isStreaming}
-            className="px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-bold hover:-translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60 disabled:hover:translate-y-0"
-          >
-            {isStreaming ? "Yanıtlanıyor..." : "Gönder"}
-          </button>
-        </form>
       </div>
+      <form
+        onSubmit={handleSendMessage}
+        className="p-6 border-t border-gray-100 flex gap-3"
+      >
+        <input
+          type="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder="Mesajınızı yazın..."
+          disabled={isStreaming}
+          className="flex-1 p-3 border-2 border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#667eea] transition-colors disabled:opacity-60"
+        />
+        <button
+          type="submit"
+          disabled={isStreaming}
+          className="px-6 py-3 bg-linear-to-br from-[#667eea] to-[#764ba2] text-white rounded-lg font-bold hover:-translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60 disabled:hover:translate-y-0"
+        >
+          {isStreaming ? "Yanıtlanıyor..." : "Gönder"}
+        </button>
+      </form>
     </div>
   );
 }
