@@ -104,12 +104,21 @@ def _resolve_model() -> str:
             _cached_model_at = time.time()
             return _cached_model
 
+        if names:
+            raise ApiError(
+                f"Ollama model '{OLLAMA_MODEL}' is not available on the server.",
+                503,
+                code="OLLAMA_MODEL_NOT_FOUND",
+            )
+
         fallback = next((name for name in names if not _is_embedding_model(name)), None)
         if fallback:
             _cached_model = fallback
             _cached_model_at = time.time()
             return _cached_model
-    except ApiError:
+    except ApiError as error:
+        if error.code == "OLLAMA_MODEL_NOT_FOUND":
+            raise
         pass
 
     if not _is_embedding_model(OLLAMA_MODEL):
