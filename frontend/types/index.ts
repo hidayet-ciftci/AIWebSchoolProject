@@ -8,6 +8,7 @@ export interface UserProfile {
   role: "student" | "teacher" | "admin" | string;
   studentNo?: number;
   sicilNo?: string;
+  _id?: string;
 }
 
 export interface Question {

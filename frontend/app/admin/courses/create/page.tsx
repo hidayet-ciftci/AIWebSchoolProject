@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
 interface UserProfile {
@@ -67,6 +68,16 @@ export default function CreateCoursePage() {
   };
 
   const handleSave = async () => {
+    // front-end validation: teacher must be selected and at least 1 student
+    if (!formData.teacher) {
+      toast.error("Lütfen bir öğretmen seçiniz.");
+      return;
+    }
+    if (!formData.students || formData.students.length < 1) {
+      toast.error("En az bir öğrenci seçmelisiniz.");
+      return;
+    }
+
     const token = localStorage.getItem("token");
     setIsLoading(true);
     try {
@@ -80,11 +91,11 @@ export default function CreateCoursePage() {
       });
 
       if (res.ok) {
-        alert("Ders başarıyla oluşturuldu!");
+        toast.success("Ders başarıyla oluşturuldu!");
         router.push("/admin/courses");
       } else {
         const errorData = await res.json();
-        alert("Hata: " + (errorData.message || "Bilinmeyen bir hata"));
+        toast.error("Hata: " + (errorData.message || "Bilinmeyen bir hata"));
       }
     } catch (error) {
       console.error("Kaydetme hatası:", error);

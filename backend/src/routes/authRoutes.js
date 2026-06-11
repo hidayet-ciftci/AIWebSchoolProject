@@ -10,7 +10,7 @@ router.post("/login", authController.login);
 
 router.get("/dashboard", verifyToken, async (req, res, next) => {
   try {
-    res.json({ message: "dashboard accesed" });
+    res.json({ message: "Pano erişildi" });
   } catch (error) {
     next(error);
   }

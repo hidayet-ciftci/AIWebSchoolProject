@@ -20,8 +20,15 @@ const register = async (req, res, next) => {
     if (newUser.password.length < 8) {
       return res
         .status(400)
-        .json({ message: "Password must be at least 8 characters long." });
+        .json({ message: "şifre en az 8 karakter uzunluğunda olmalı" });
     }
+
+    if (parseInt(newUser.age) < 18) {
+      return res.status(400).json({
+        message: "yaş en az 18 olmalı",
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(newUser.password, 10);
     const generateId = await generateUserIds(newUser.role);
     const user = await User.create({
@@ -38,16 +45,15 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(400).json({ message: "Wrong Email, User not found" });
+    if (!user) return res.status(400).json({ message: "kullanıcı bulunamadı" });
     const isMatched = await bcrypt.compare(password, user.password);
-    if (!isMatched) return res.status(400).json({ message: "Wrong Password" });
+    if (!isMatched) return res.status(400).json({ message: "Hatalı şifre" });
     const accessToken = Jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       {
         expiresIn: "1h",
-      }
+      },
     );
     res.json({
       message: "login success",

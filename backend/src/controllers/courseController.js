@@ -22,7 +22,7 @@ const getCourseById = async (req, res, next) => {
     const course = await Course.findById(req.params.id)
       .populate("teacher", "name surname email")
       .populate("students", "name surname studentNo");
-    if (!course) return res.status(404).json({ message: "course not Found" });
+    if (!course) return res.status(404).json({ message: "Ders bulunamadı" });
     res.status(200).json(course);
   } catch (err) {
     next(err);
@@ -31,22 +31,40 @@ const getCourseById = async (req, res, next) => {
 
 const createCourse = async (req, res, next) => {
   try {
-    const { name, teacher, students, lessonNumber, studentNumber } = req.body;
+    const { name, courseCode, teacher, students, lessonNumber, studentNumber } =
+      req.body;
     const teacherExist = await User.findById(teacher);
     if (!teacherExist)
-      return res.status(400).json({ message: "Teacher not Found" });
+      return res.status(400).json({ message: "Öğretmen bulunamadı" });
     if (teacherExist.role !== "teacher")
-      return res.status(400).json({ message: "this is not teacher" });
+      return res.status(400).json({ message: "Bu kullanıcı öğretmen değil" });
     if (students && students.length > 0) {
       const count = await User.countDocuments({ _id: { $in: students } });
       if (count !== students.length)
         return res
           .status(400)
-          .json({ message: "some of students ID is not valid " });
+          .json({ message: "Bazı öğrenci ID'leri geçersiz" });
     }
+    // validation: name and courseCode must be present and not identical
+    if (!name || !courseCode)
+      return res
+        .status(400)
+        .json({ message: "Ders adı ve ders kodu gereklidir" });
+    if (String(name).trim() === String(courseCode).trim())
+      return res
+        .status(400)
+        .json({ message: "Ders adı ve ders kodu aynı olamaz" });
+    // basit duplicate kontrolü (aynı isim veya kod varsa reddet)
+    const nameExists = await Course.findOne({ name: name });
+    if (nameExists)
+      return res.status(400).json({ message: "Bu ders adı zaten kayıtlı" });
+    const codeExists = await Course.findOne({ courseCode: courseCode });
+    if (codeExists)
+      return res.status(400).json({ message: "Bu ders kodu zaten kayıtlı" });
+
     const courseData = { ...req.body };
     const createdCourse = await Course.create(courseData);
-    res.status(201).json({ message: "course Created", createdCourse });
+    res.status(201).json({ message: "Ders oluşturuldu", createdCourse });
   } catch (error) {
     next(error);
   }
@@ -55,14 +73,56 @@ const createCourse = async (req, res, next) => {
 const updateCourse = async (req, res, next) => {
   try {
     const updateData = { ...req.body };
-    const updateCourse = await Course.findByIdAndUpdate(
+
+    const existing = await Course.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: "Ders bulunamadı" });
+
+    const newName =
+      updateData.name !== undefined
+        ? String(updateData.name).trim()
+        : existing.name;
+    const newCode =
+      updateData.courseCode !== undefined
+        ? String(updateData.courseCode).trim()
+        : existing.courseCode;
+
+    if (!newName || !newCode) {
+      return res.status(400).json({ message: "Ders adı ve kodu boş olamaz" });
+    }
+
+    if (newName === newCode) {
+      return res
+        .status(400)
+        .json({ message: "Ders adı ve ders kodu aynı olamaz" });
+    }
+
+    // basit conflict kontrolü: başka bir kayıt aynı isim veya kodu kullanıyorsa reddet
+    const nameConflict = await Course.findOne({
+      name: newName,
+      _id: { $ne: req.params.id },
+    });
+    if (nameConflict)
+      return res
+        .status(400)
+        .json({ message: "Bu ders adı başka bir kayıtta kullanılıyor" });
+    const codeConflict = await Course.findOne({
+      courseCode: newCode,
+      _id: { $ne: req.params.id },
+    });
+    if (codeConflict)
+      return res
+        .status(400)
+        .json({ message: "Bu ders kodu başka bir kayıtta kullanılıyor" });
+
+    const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true },
     );
-    if (!updateCourse)
-      return res.status(404).json({ message: "course not Found" });
-    res.status(200).json({ message: "course updated", updateCourse });
+
+    res
+      .status(200)
+      .json({ message: "Ders güncellendi", updateCourse: updatedCourse });
   } catch (error) {
     next(error);
   }
@@ -73,8 +133,8 @@ const deleteCourse = async (req, res, next) => {
     const id = req.params.id;
     const deletedCourse = await Course.findByIdAndDelete(id);
     if (!deletedCourse)
-      return res.status(404).json({ message: "Course not found" });
-    res.status(200).json({ message: "course deleted", deletedCourse });
+      return res.status(404).json({ message: "Ders bulunamadı" });
+    res.status(200).json({ message: "Ders silindi", deletedCourse });
   } catch (error) {
     next(error);
   }
@@ -112,7 +172,7 @@ const uploadMaterial = async (req, res, next) => {
     const { title } = req.body;
 
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
+      return res.status(400).json({ message: "Dosya yüklenmedi" });
     }
 
     const materialId = new mongoose.Types.ObjectId();
@@ -136,7 +196,7 @@ const uploadMaterial = async (req, res, next) => {
     );
 
     if (!updatedCourse) {
-      return res.status(404).json({ message: "Course not found" });
+      return res.status(404).json({ message: "Ders bulunamadı" });
     }
 
     let queueStatus = "queued";
@@ -167,8 +227,8 @@ const uploadMaterial = async (req, res, next) => {
     res.status(202).json({
       message:
         queueStatus === "queued"
-          ? "Material uploaded and indexing queued"
-          : "Material uploaded but indexing could not be queued",
+          ? "Materyal yüklendi ve indeksleme sıraya alındı"
+          : "Materyal yüklendi ancak indeksleme sıraya alınamadı",
       queueStatus,
       course: finalCourse,
     });
@@ -183,12 +243,12 @@ const deleteMaterial = async (req, res, next) => {
     const course = await Course.findById(id);
 
     if (!course) {
-      return res.status(404).json({ message: "Course not found" });
+      return res.status(404).json({ message: "Ders bulunamadı" });
     }
 
     const material = course.materials.id(materialId);
     if (!material) {
-      return res.status(404).json({ message: "Material not found" });
+      return res.status(404).json({ message: "Materyal bulunamadı" });
     }
 
     try {
@@ -213,7 +273,7 @@ const deleteMaterial = async (req, res, next) => {
     course.materials.pull({ _id: materialId });
     await course.save();
 
-    res.status(200).json({ message: "Material deleted", course });
+    res.status(200).json({ message: "Materyal silindi", course });
   } catch (err) {
     next(err);
   }

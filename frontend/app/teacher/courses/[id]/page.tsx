@@ -1,6 +1,7 @@
 // frontend/app/teacher/courses/[id]/page.tsx
 "use client";
 import { useState, useEffect, use, useCallback } from "react";
+import toast from "react-hot-toast";
 
 type CourseMaterial = {
   _id: string;
@@ -82,7 +83,7 @@ export default function CourseDetailPage({
       body: formData,
     });
 
-    alert("Dosya yüklendi ve RAG indeksleme kuyruğuna alındı!");
+    toast.success("Dosya yüklendi ve RAG indeksleme kuyruğuna alındı!");
     setFile(null);
     fetchCourse();
   };

@@ -16,8 +16,18 @@ const createGrade = async (req, res) => {
     const resultDetails = [];
 
     exam.questions.forEach((q) => {
-      const studentAnswer = answers[q._id] || "";
-      const correctAnswer = q.correctAnswer || "";
+      const studentAnswer = String(answers[q._id] || "").trim();
+      let correctAnswer = String(q.correctAnswer || "").trim();
+
+      if (q.questionType === "multiple_choice" && Array.isArray(q.options)) {
+        const optionLabels = ["A", "B", "C", "D"];
+        const normalizedLabel = correctAnswer.toUpperCase();
+        if (optionLabels.includes(normalizedLabel)) {
+          correctAnswer = String(
+            q.options[optionLabels.indexOf(normalizedLabel)] || "",
+          ).trim();
+        }
+      }
 
       const isCorrect =
         studentAnswer.trim().toLowerCase() ===
@@ -69,7 +79,7 @@ const getMyGrades = async (req, res) => {
     const studentId = req.user.id;
 
     const enrolledCourses = await Course.find({ students: studentId }).select(
-      "_id"
+      "_id",
     );
     const courseIds = enrolledCourses.map((course) => course._id);
 
@@ -95,7 +105,7 @@ const getMyGrades = async (req, res) => {
 
     const gradesWithAllExams = allExams.map((exam) => {
       const grade = existingGrades.find(
-        (g) => g.exam && g.exam._id.toString() === exam._id.toString()
+        (g) => g.exam && g.exam._id.toString() === exam._id.toString(),
       );
 
       if (grade && grade.exam && grade.course) {
@@ -147,7 +157,7 @@ const getTeacherGrades = async (req, res) => {
     const teacherId = req.user.id;
 
     const teacherCourses = await Course.find({ teacher: teacherId }).select(
-      "_id name courseCode"
+      "_id name courseCode",
     );
 
     if (teacherCourses.length === 0) {
@@ -172,12 +182,12 @@ const getTeacherGrades = async (req, res) => {
         const courseObj = course.toObject();
 
         const courseData = coursesWithStudents.find(
-          (c) => c._id.toString() === course._id.toString()
+          (c) => c._id.toString() === course._id.toString(),
         );
         const students = courseData?.students || [];
 
         const courseExams = exams.filter(
-          (exam) => exam.course._id.toString() === course._id.toString()
+          (exam) => exam.course._id.toString() === course._id.toString(),
         );
 
         const studentsWithGrades = await Promise.all(
@@ -222,7 +232,7 @@ const getTeacherGrades = async (req, res) => {
             studentObj.totalWeight = totalWeight;
 
             return studentObj;
-          })
+          }),
         );
 
         courseObj.students = studentsWithGrades;
@@ -258,7 +268,7 @@ const getTeacherGrades = async (req, res) => {
           overallCount > 0 ? overallSum / overallCount : 0;
 
         return courseObj;
-      })
+      }),
     );
 
     res.status(200).json(coursesWithGrades);

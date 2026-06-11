@@ -285,7 +285,6 @@ export default function TeacherDashboardHome() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.slice(0, 6).map((course) => {
-              const courseGrade = grades.find((g) => g._id === course._id);
               const studentCount = course.students?.length || 0;
 
               return (
@@ -301,11 +300,6 @@ export default function TeacherDashboardHome() {
                     <p className="text-sm text-[#667eea]">
                       👥 {studentCount} Öğrenci
                     </p>
-                    {courseGrade && courseGrade.overallAverage > 0 && (
-                      <p className="text-sm font-semibold text-[#1a202c]">
-                        Ort: {courseGrade.overallAverage.toFixed(1)}
-                      </p>
-                    )}
                   </div>
                 </div>
               );

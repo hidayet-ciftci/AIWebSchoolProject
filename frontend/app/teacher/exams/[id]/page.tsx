@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { useProfile } from "@/hooks/useProfile";
 
 export default function ExamDetailPage() {
@@ -79,24 +80,86 @@ export default function ExamDetailPage() {
   }, [id, user, loading]);
 
   const handleAddOrUpdateQuestion = () => {
-    if (!newQuestion.questionText) return alert("Soru metni boş olamaz.");
-
-    if (newQuestion.questionType === "multiple_choice") {
-      if (newQuestion.options.some((o) => o.trim() === ""))
-        return alert("Tüm şıkları doldurun.");
-      if (!newQuestion.correctAnswer) return alert("Doğru şıkkı seçin.");
-    } else {
-      if (!newQuestion.correctAnswer) return alert("Beklenen cevabı girin.");
+    if (!newQuestion.questionText.trim()) {
+      toast.error("Soru metni boş olamaz.");
+      return;
     }
 
-    if (editingIndex !== null) {
-      const updatedQuestions = [...questions];
-      updatedQuestions[editingIndex] = newQuestion;
-      setQuestions(updatedQuestions);
-      setEditingIndex(null);
-      alert("Soru güncellendi.");
+    if (newQuestion.questionType === "multiple_choice") {
+      const trimmedOptions = newQuestion.options.map((opt) => opt.trim());
+      if (trimmedOptions.some((o) => o === "")) {
+        toast.error("Tüm şıkları doldurun.");
+        return;
+      }
+
+      const uniqueOptions = new Set(
+        trimmedOptions.map((opt) => opt.toLowerCase()),
+      );
+      if (uniqueOptions.size !== trimmedOptions.length) {
+        toast.error("Şıklar birbirinden farklı olmalıdır.");
+        return;
+      }
+
+      let selectedCorrectAnswer = newQuestion.correctAnswer.trim();
+      const optionLabels = ["A", "B", "C", "D"];
+      if (optionLabels.includes(selectedCorrectAnswer.toUpperCase())) {
+        selectedCorrectAnswer =
+          trimmedOptions[
+            optionLabels.indexOf(selectedCorrectAnswer.toUpperCase())
+          ] || "";
+      }
+
+      if (!selectedCorrectAnswer) {
+        toast.error("Doğru şıkkı seçin.");
+        return;
+      }
+
+      if (
+        !trimmedOptions.some(
+          (opt) => opt.toLowerCase() === selectedCorrectAnswer.toLowerCase(),
+        )
+      ) {
+        toast.error("Doğru cevap şıklardan biri olmalıdır.");
+        return;
+      }
+
+      const formattedQuestion = {
+        ...newQuestion,
+        questionText: newQuestion.questionText.trim(),
+        options: trimmedOptions,
+        correctAnswer: selectedCorrectAnswer,
+      };
+
+      if (editingIndex !== null) {
+        const updatedQuestions = [...questions];
+        updatedQuestions[editingIndex] = formattedQuestion;
+        setQuestions(updatedQuestions);
+        setEditingIndex(null);
+        toast.success("Soru güncellendi.");
+      } else {
+        setQuestions([...questions, formattedQuestion]);
+      }
     } else {
-      setQuestions([...questions, newQuestion]);
+      if (!newQuestion.correctAnswer.trim()) {
+        toast.error("Beklenen cevabı girin.");
+        return;
+      }
+
+      const formattedQuestion = {
+        ...newQuestion,
+        questionText: newQuestion.questionText.trim(),
+        correctAnswer: newQuestion.correctAnswer.trim(),
+      };
+
+      if (editingIndex !== null) {
+        const updatedQuestions = [...questions];
+        updatedQuestions[editingIndex] = formattedQuestion;
+        setQuestions(updatedQuestions);
+        setEditingIndex(null);
+        toast.success("Soru güncellendi.");
+      } else {
+        setQuestions([...questions, formattedQuestion]);
+      }
     }
 
     setNewQuestion({
@@ -144,10 +207,16 @@ export default function ExamDetailPage() {
   };
 
   const handleSaveChanges = async () => {
+    if (questions.length === 0) {
+      toast.error("Kaydetmek için en az 1 soru ekleyin.");
+      return false;
+    }
+
     if (totalPoints > 100) {
-      return alert(
+      toast.error(
         `Kaydetmek için soruların toplam puanı 100'ü geçmemelidir.\nŞu anki toplam: ${totalPoints}`,
       );
+      return false;
     }
 
     const fullDate = new Date(`${examMeta.date}T${examMeta.time}:00`);
@@ -176,21 +245,35 @@ export default function ExamDetailPage() {
 
       if (res.ok) {
         setExam((prev: any) => ({ ...prev, title: examMeta.title }));
-        alert("Sınav bilgileri ve sorular başarıyla kaydedildi!");
+        toast.success("Sınav bilgileri ve sorular başarıyla kaydedildi!");
+        return true;
       } else {
-        alert("Kaydederken bir hata oluştu.");
+        const data = await res.json();
+        toast.error(data?.message || "Kaydederken bir hata oluştu.");
+        return false;
       }
     } catch (error) {
       console.error("Kaydetme hatası:", error);
+      toast.error("Sınav kaydedilirken sunucuda bir hata oluştu.");
+      return false;
     }
   };
 
   const handlePublish = async () => {
+    if (questions.length === 0) {
+      toast.error("Yayınlamak için en az 1 soru ekleyin.");
+      return;
+    }
+
     if (totalPoints !== 100) {
-      return alert(
+      toast.error(
         `Yayınlamak için soruların toplam puanı tam 100 olmalıdır.\nŞu anki toplam: ${totalPoints}`,
       );
+      return;
     }
+
+    const saved = await handleSaveChanges();
+    if (!saved) return;
 
     if (!confirm("Sınav yayınlanacak. Emin misiniz?")) return;
 
@@ -211,10 +294,14 @@ export default function ExamDetailPage() {
       );
       if (res.ok) {
         setExam({ ...exam, isPublished: true });
-        alert("Sınav yayına alındı!");
+        toast.success("Sınav yayına alındı!");
+      } else {
+        const data = await res.json();
+        toast.error(data?.message || "Yayınlarken bir hata oluştu.");
       }
     } catch (err) {
       console.error(err);
+      toast.error("Yayınlarken sunucuda bir hata oluştu.");
     }
   };
 
@@ -243,7 +330,7 @@ export default function ExamDetailPage() {
       );
       if (res.ok) {
         setExam({ ...exam, isPublished: false });
-        alert("Sınav yayından kaldırıldı (Taslak moduna döndü).");
+        toast.success("Sınav yayından kaldırıldı (Taslak moduna döndü).");
       }
     } catch (err) {
       console.error(err);
@@ -494,11 +581,15 @@ export default function ExamDetailPage() {
                     <input
                       type="radio"
                       name="correct"
-                      checked={newQuestion.correctAnswer === optLabel}
+                      checked={
+                        newQuestion.correctAnswer ===
+                          newQuestion.options[idx] ||
+                        newQuestion.correctAnswer === optLabel
+                      }
                       onChange={() =>
                         setNewQuestion({
                           ...newQuestion,
-                          correctAnswer: optLabel,
+                          correctAnswer: newQuestion.options[idx] || "",
                         })
                       }
                       className="cursor-pointer"
@@ -595,7 +686,15 @@ export default function ExamDetailPage() {
                             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {q.options?.map((opt: string, i: number) => {
                                 const label = ["A", "B", "C", "D"][i];
-                                const isCorrect = label === q.correctAnswer;
+                                const normalizedCorrect =
+                                  q.correctAnswer
+                                    ?.toString()
+                                    .trim()
+                                    .toLowerCase() || "";
+                                const isCorrect =
+                                  opt.toString().trim().toLowerCase() ===
+                                    normalizedCorrect ||
+                                  label === q.correctAnswer;
                                 return (
                                   <li
                                     key={i}

@@ -19,7 +19,7 @@ const createExam = async (req, res) => {
 
     const totalWeight = existingExams.reduce(
       (sum, exam) => sum + (exam.weight || 0),
-      0
+      0,
     );
 
     if (totalWeight + weight > 100) {
@@ -90,7 +90,124 @@ const getExamById = async (req, res) => {
 const updateExam = async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedExam = await Exam.findByIdAndUpdate(id, req.body, {
+    const exam = await Exam.findById(id);
+    if (!exam) return res.status(404).json({ message: "Sınav bulunamadı" });
+
+    const updateData = { ...req.body };
+    const { isPublished, questions } = req.body;
+
+    if (Array.isArray(questions)) {
+      if (questions.length === 0) {
+        return res.status(400).json({
+          message: "Sınav en az 1 soru içermelidir.",
+        });
+      }
+
+      const optionLabels = ["A", "B", "C", "D"];
+
+      try {
+        updateData.questions = questions.map((question) => {
+          if (!question.questionText || !question.questionText.trim()) {
+            throw new Error("Her sorunun metni dolu olmalıdır.");
+          }
+
+          const parsedQuestion = {
+            ...question,
+            questionText: question.questionText.trim(),
+            points: Number(question.points) || 0,
+          };
+
+          if (parsedQuestion.questionType === "multiple_choice") {
+            if (
+              !Array.isArray(parsedQuestion.options) ||
+              parsedQuestion.options.length !== 4
+            ) {
+              throw new Error("Test sorularının 4 şıkkı olmalıdır.");
+            }
+
+            const trimmedOptions = parsedQuestion.options.map((opt) =>
+              String(opt || "").trim(),
+            );
+
+            if (trimmedOptions.some((opt) => opt === "")) {
+              throw new Error("Tüm şıklar dolu olmalıdır.");
+            }
+
+            const uniqueOptions = new Set(
+              trimmedOptions.map((opt) => opt.toLowerCase()),
+            );
+            if (uniqueOptions.size !== trimmedOptions.length) {
+              throw new Error("Şıklar birbirinden farklı olmalıdır.");
+            }
+
+            let correctAnswer = String(
+              parsedQuestion.correctAnswer || "",
+            ).trim();
+            if (optionLabels.includes(correctAnswer.toUpperCase())) {
+              correctAnswer =
+                trimmedOptions[
+                  optionLabels.indexOf(correctAnswer.toUpperCase())
+                ] || "";
+            }
+
+            if (
+              !trimmedOptions.some(
+                (opt) => opt.toLowerCase() === correctAnswer.toLowerCase(),
+              )
+            ) {
+              throw new Error("Doğru cevap, şıklardan biri olmalıdır.");
+            }
+
+            return {
+              ...parsedQuestion,
+              options: trimmedOptions,
+              correctAnswer,
+            };
+          }
+
+          if (
+            parsedQuestion.questionType === "text_input" &&
+            !String(parsedQuestion.correctAnswer || "").trim()
+          ) {
+            throw new Error("Klasik sorular için doğru cevap gereklidir.");
+          }
+
+          return {
+            ...parsedQuestion,
+            correctAnswer: String(parsedQuestion.correctAnswer || "").trim(),
+          };
+        });
+      } catch (validationError) {
+        return res.status(400).json({
+          message: validationError.message,
+        });
+      }
+    }
+
+    if (isPublished === true) {
+      const effectiveQuestions = Array.isArray(updateData.questions)
+        ? updateData.questions
+        : exam.questions;
+
+      if (!effectiveQuestions || effectiveQuestions.length === 0) {
+        return res.status(400).json({
+          message: "Yayınlamak için en az 1 soru ekleyin.",
+        });
+      }
+
+      const totalPoints = effectiveQuestions.reduce(
+        (sum, question) => sum + (Number(question.points) || 0),
+        0,
+      );
+
+      if (totalPoints !== 100) {
+        return res.status(400).json({
+          message: `Yayınlamak için soruların toplam puanı 100 olmalıdır. Şu anki toplam: ${totalPoints}.`,
+        });
+      }
+    }
+
+    const updatedExam = await Exam.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
@@ -120,7 +237,7 @@ const getMyExams = async (req, res) => {
     const studentId = req.user.id;
 
     const enrolledCourses = await Course.find({ students: studentId }).select(
-      "_id"
+      "_id",
     );
 
     const courseIds = enrolledCourses.map((course) => course._id);
@@ -146,7 +263,7 @@ const getMyExams = async (req, res) => {
         });
         examObj.isCompleted = !!grade;
         return examObj;
-      })
+      }),
     );
 
     res.status(200).json(examsWithStatus);
@@ -183,7 +300,7 @@ const getExamForStudentToTake = async (req, res) => {
     const now = new Date();
     const examStartDate = new Date(exam.date);
     const examEndDate = new Date(
-      examStartDate.getTime() + exam.duration * 60000
+      examStartDate.getTime() + exam.duration * 60000,
     );
 
     if (now < examStartDate) {

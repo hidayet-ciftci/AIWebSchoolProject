@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 
 interface UserProfile {
@@ -46,7 +47,7 @@ export default function EditCoursePage() {
     const fetchCourseDetails = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/courses/${courseId}`
+          `http://localhost:5000/api/courses/${courseId}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -86,6 +87,16 @@ export default function EditCoursePage() {
   };
 
   const handleSave = async () => {
+    // front-end validation: teacher must be selected and at least 1 student
+    if (!formData.teacher) {
+      toast.error("Lütfen bir öğretmen seçiniz.");
+      return;
+    }
+    if (!formData.students || formData.students.length < 1) {
+      toast.error("En az bir öğrenci seçmelisiniz.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await fetch(
@@ -94,14 +105,16 @@ export default function EditCoursePage() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       if (res.ok) {
-        alert("Ders güncellendi!");
+        toast.success("Ders güncellendi!");
         router.push("/admin/courses");
       } else {
-        alert("Güncelleme başarısız.");
+        toast.error(
+          "Güncelleme başarısız. Ders Adı ve Kodu başka ders tarafından kullanılıyor",
+        );
       }
     } catch (error) {
       console.error("Hata:", error);

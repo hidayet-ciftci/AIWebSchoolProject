@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { useProfile } from "@/hooks/useProfile";
 
 export default function TeacherExamsPage() {
@@ -65,14 +66,14 @@ export default function TeacherExamsPage() {
     e.preventDefault();
 
     if (!user?._id) {
-      alert(
+      toast.error(
         "Kullanıcı bilgisi yüklenemedi. Lütfen sayfayı yenileyin veya tekrar giriş yapın.",
       );
       return;
     }
 
     if (newTotalWeight > 100) {
-      alert(
+      toast.error(
         `Bu ders için toplam ağırlık 100'ü geçemez!\nMevcut toplam: ${currentTotalWeight}%\nYeni ağırlık: ${formData.weight}%\nToplam: ${newTotalWeight}%`,
       );
       return;
@@ -104,11 +105,11 @@ export default function TeacherExamsPage() {
         router.push(`/teacher/exams/${data.exam._id}`);
       } else {
         console.error("Backend Hatası:", data);
-        alert(`Hata: ${data.message}`);
+        toast.error(`Hata: ${data.message}`);
       }
     } catch (error) {
       console.error("Fetch Hatası:", error);
-      alert("Sunucuya bağlanılamadı.");
+      toast.error("Sunucuya bağlanılamadı.");
     }
   };
 
