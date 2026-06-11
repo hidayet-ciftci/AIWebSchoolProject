@@ -57,14 +57,14 @@ backend/python_rag_service/
 
 ## FastAPI Endpoint'leri
 
-| Method | Path                       | Açıklama                                      |
-| ------ | -------------------------- | --------------------------------------------- |
-| GET    | `/health`                  | Servis sağlık kontrolü → `{"ok": true}`       |
-| POST   | `/api/rag/ingest`          | Döküman parse + chunk + embed + Qdrant upsert |
-| POST   | `/api/rag/context`         | Hibrit retrieval → top-5 chunk döner          |
-| POST   | `/api/llm/generate`        | Prompt oluştur + Ollama blocking yanıt        |
-| POST   | `/api/llm/stream`          | Prompt oluştur + Ollama SSE token akışı       |
-| POST   | `/api/rag/delete-material` | Qdrant'tan materialId'ye ait chunk'ları sil   |
+| Method | Path                       | Açıklama                                                          |
+| ------ | -------------------------- | ----------------------------------------------------------------- |
+| GET    | `/health`                  | Servis sağlık kontrolü → `{"ok": true}`                           |
+| POST   | `/api/rag/ingest`          | Döküman parse + chunk + embed + Qdrant upsert                     |
+| POST   | `/api/rag/context`         | Hibrit retrieval → top-5 chunk döner                              |
+| POST   | `/api/llm/generate`        | Prompt oluştur + Ollama fine-tuned mistral-7b-edu blocking yanıt  |
+| POST   | `/api/llm/stream`          | Prompt oluştur + Ollama fine-tuned mistral-7b-edu SSE token akışı |
+| POST   | `/api/rag/delete-material` | Qdrant'tan materialId'ye ait chunk'ları sil                       |
 
 Tüm endpoint'ler `X-Rag-Secret` header ile korunur (`PY_RAG_SHARED_SECRET`).
 
@@ -217,23 +217,3 @@ Node → Frontend'e SSE:
 | Python servisi kapalı           | —        | —                 | Node `503 Service Unavailable`            |
 | Ollama yanıt vermez             | —        | —                 | `504 Gateway Timeout`                     |
 | Ollama runner çöker             | —        | —                 | 750ms bekle + 1 otomatik retry            |
-
----
-
-## Yol Haritası
-
-### Yakın Vadeli
-
-- [ ] **Sohbet geçmişi**: son N mesajı prompt'a ekle — konuşma bağlamı
-- [ ] **Rol bazlı sistem promptları**: öğrenci / öğretmen / admin için farklı talimatlar
-- [ ] **BullMQ + Redis tam entegrasyonu**: ölçeklenebilir kuyruk (`QUEUE_PROVIDER=bullmq`)
-
-### Orta Vadeli
-
-- [ ] **OCR desteği**: taranmış PDF'lerden metin çıkarımı
-- [ ] **Daha fazla E2E testi**: farklı materyal türleri ve dillerde retrieval kalite doğrulaması
-
-### Uzun Vadeli
-
-- [ ] **Fine-tuning**: Türkçe eğitim verisi ile model ince ayarı
-- [ ] **Görüntü ve tablo desteği**: PDF'lerdeki görsellerin yorumlanması

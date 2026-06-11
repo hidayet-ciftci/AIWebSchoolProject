@@ -15,7 +15,7 @@ Okul yönetimi ile yapay zeka destekli öğrenmeyi aynı platformda birleştiren
 | Backend       | Node.js, Express.js (port 5000)                                               |
 | Veritabanı    | MongoDB Atlas                                                                 |
 | Auth          | JWT                                                                           |
-| LLM           | Ollama — `llama3` (port 11434)                                                |
+| LLM           | Ollama — fine-tuned `mistral-7b-edu` (port 11434)                             |
 | Embedding     | sentence-transformers — `intfloat/multilingual-e5-base` (768 boyut)           |
 | Reranker      | sentence-transformers — `cross-encoder/ms-marco-MiniLM-L-6-v2`                |
 | Keyword Arama | BM25Okapi (`rank-bm25`) — Türkçe tokenizer                                    |
@@ -39,13 +39,13 @@ Okul yönetimi ile yapay zeka destekli öğrenmeyi aynı platformda birleştiren
 
 ## Ön Gereksinimler
 
-| Araç           | Notlar                                                 |
-| -------------- | ------------------------------------------------------ |
-| Node.js ≥ 18   | Frontend + backend için                                |
-| Python ≥ 3.10  | 3.13 test edildi                                       |
-| Docker Desktop | Qdrant + Redis container'ları için — çalışıyor olmalı  |
-| Ollama         | `llama3` modeli çekilmiş olmalı (`ollama pull llama3`) |
-| MongoDB Atlas  | Bağlantı dizesi `.env`'de tanımlı olmalı               |
+| Araç           | Notlar                                                                 |
+| -------------- | ---------------------------------------------------------------------- |
+| Node.js ≥ 18   | Frontend + backend için                                                |
+| Python ≥ 3.10  | 3.13 test edildi                                                       |
+| Docker Desktop | Qdrant + Redis container'ları için — çalışıyor olmalı                  |
+| Ollama         | `mistral-7b-edu` modeli çekilmiş olmalı (`ollama pull mistral-7b-edu`) |
+| MongoDB Atlas  | Bağlantı dizesi `.env`'de tanımlı olmalı                               |
 
 ---
 
@@ -66,8 +66,8 @@ cd backend
 npm install
 cd ..\frontend ; npm install
 
-# 5. Ollama modelini çek (4.3 GB — bir kez indirilir)
-ollama pull llama3
+# 5. Ollama modelini çek
+ollama pull mistral-7b-edu
 ```
 
 > `intfloat/multilingual-e5-base` (~1.1 GB) ve `cross-encoder/ms-marco-MiniLM-L-6-v2` (~90 MB)
@@ -142,7 +142,7 @@ JWT_SECRET=<güçlü rastgele değer>
 
 # Ollama (sadece yanıt üretimi — embedding sentence-transformers ile yapılıyor)
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3
+OLLAMA_MODEL=mistral-7b-edu
 OLLAMA_GENERATE_TIMEOUT_MS=90000
 OLLAMA_RAG_TIMEOUT_MS=120000
 OLLAMA_NUM_PREDICT=600

@@ -33,7 +33,7 @@
   ├── Qdrant     (vector DB,   :6333, Docker)
   ├── Redis      (queue/cache, :6379, Docker)
   ├── MongoDB Atlas
-  └── Ollama     (llama3,      :11434)
+  └── Ollama     (mistral-7b-edu,      :11434)
 ```
 
 ---
@@ -53,7 +53,7 @@ POST /chat  (Bearer JWT)
        └── CrossEncoder rerank → top-5
   → generatePythonReply()  →  Python /api/llm/generate
        ├── Prompt oluşturulur (prompt_builder)
-       └── Ollama llama3 (stream:false)
+       └── Ollama mistral-7b-edu (stream:false)
   ← { reply, rag: { used, reason, sourceCount, sources } }
 ```
 
@@ -64,7 +64,7 @@ POST /chat/stream  (Bearer JWT)
   → verifyToken
   → getPythonRagContext()   →  aynı retrieval pipeline
   → streamPythonReply()     →  Python /api/llm/stream  (SSE)
-       └── Ollama llama3 (stream:true)
+       └── Ollama mistral-7b-edu (stream:true)
   ← SSE token akışı → frontend token-by-token görüntüler
 ```
 
